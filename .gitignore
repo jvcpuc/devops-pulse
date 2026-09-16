@@ -1,0 +1,33 @@
+# Secrets / ambiente local
+.env
+pulse.env
+
+# Roteiro interno de apresentação (não é material do professor)
+APRESENTACAO-ROTEIRO.md
+docs/canais.md
+
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Runtime artifacts
+data/results/*
+!data/results/.gitkeep
+data/*.db
+evidence/*.png
+evidence/*.jpg
+*.wav
+*.mp3
+logs/
+*.log
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

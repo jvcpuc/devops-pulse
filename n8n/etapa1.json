@@ -1,0 +1,105 @@
+{
+  "name": "DevOps Pulse AI — Etapa 1",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger-manual",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.APP_BASE_URL || 'http://host.docker.internal:8000' }}/api/pipeline/run",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "hours", "value": "24" },
+            { "name": "with_llm", "value": "true" },
+            { "name": "with_tts", "value": "true" },
+            { "name": "persist", "value": "true" }
+          ]
+        },
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "http-pulse",
+      "name": "HTTP Request — Pipeline",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "error",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "if-status",
+      "name": "IF status OK?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [440, 0]
+    },
+    {
+      "parameters": {
+        "content": "## Resultado\n\nUse `execution_id`, `metrics`, `alerts`, `summary` e `timings`.\n\nPersistência já ocorreu no microsserviço (SQLite).\nOpcional: conectar Google Sheets aqui.",
+        "height": 120,
+        "width": 280
+      },
+      "id": "note-result",
+      "name": "Resultado",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [680, -80]
+    },
+    {
+      "parameters": {
+        "content": "## Error Handler\n\nSe status=error:\n- registrar no log do n8n\n- notificar operador\n- não perder execution_id",
+        "height": 120,
+        "width": 240
+      },
+      "id": "note-error",
+      "name": "Error Handler",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [680, 120]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [[{ "node": "HTTP Request — Pipeline", "type": "main", "index": 0 }]]
+    },
+    "HTTP Request — Pipeline": {
+      "main": [[{ "node": "IF status OK?", "type": "main", "index": 0 }]]
+    },
+    "IF status OK?": {
+      "main": [
+        [{ "node": "Resultado", "type": "main", "index": 0 }],
+        [{ "node": "Error Handler", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "pinData": {}
+}

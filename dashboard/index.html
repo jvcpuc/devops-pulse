@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DevOps Pulse AI — Dashboard</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --panel: #1a2332;
+      --ink: #e7ecf3;
+      --muted: #8b9bb4;
+      --accent: #3d9cf0;
+      --ok: #3ecf8e;
+      --warn: #f0b429;
+      --bad: #f07178;
+      --border: #2a3548;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.5;
+      padding: 24px;
+    }
+    h1 { font-size: 1.4rem; font-weight: 600; margin: 0 0 4px; }
+    .sub { color: var(--muted); font-size: 0.9rem; margin-bottom: 20px; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+    }
+    .card .label { color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    .card .value { font-size: 1.6rem; font-weight: 650; margin-top: 4px; }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .panel h2 { margin: 0 0 12px; font-size: 1rem; font-weight: 600; }
+    .alert {
+      border-left: 3px solid var(--warn);
+      padding: 8px 12px;
+      margin-bottom: 8px;
+      background: rgba(240, 180, 41, 0.08);
+      border-radius: 0 6px 6px 0;
+      font-size: 0.9rem;
+    }
+    .alert.high { border-left-color: var(--bad); background: rgba(240, 113, 120, 0.08); }
+    .alert.low { border-left-color: var(--accent); background: rgba(61, 156, 240, 0.08); }
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+    th { color: var(--muted); font-weight: 500; }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .badge.success { background: rgba(62, 207, 142, 0.15); color: var(--ok); }
+    .badge.partial { background: rgba(240, 180, 41, 0.15); color: var(--warn); }
+    .badge.error { background: rgba(240, 113, 120, 0.15); color: var(--bad); }
+    .badge.demo { background: rgba(61, 156, 240, 0.15); color: var(--accent); }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 800px) { .row { grid-template-columns: 1fr; } }
+    .bar-wrap { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
+    .bar-label { width: 100px; color: var(--muted); font-size: 0.8rem; }
+    .bar-track { flex: 1; height: 10px; background: #243044; border-radius: 5px; overflow: hidden; }
+    .bar-fill { height: 100%; background: var(--accent); border-radius: 5px; }
+    .note { color: var(--muted); font-size: 0.8rem; margin-top: 8px; }
+    .mono { font-family: ui-monospace, Consolas, monospace; font-size: 0.8rem; }
+  </style>
+</head>
+<body>
+  <h1>DevOps Pulse AI</h1>
+  <p class="sub">Boletim inteligente de operações · storytelling executivo</p>
+
+  <div class="grid" id="cards"></div>
+
+  <div class="row">
+    <div class="panel">
+      <h2>Alertas</h2>
+      <div id="alerts"></div>
+    </div>
+    <div class="panel">
+      <h2>Performance do pipeline</h2>
+      <div id="timings"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Execuções recentes <span class="badge demo" id="source-badge"></span></h2>
+    <table>
+      <thead>
+        <tr>
+          <th>execution_id</th>
+          <th>status</th>
+          <th>commits</th>
+          <th>CI %</th>
+          <th>latência total</th>
+        </tr>
+      </thead>
+      <tbody id="exec-body"></tbody>
+    </table>
+    <p class="note">
+      Fonte: carregue um JSON de execução (botão abaixo) ou sirva <span class="mono">data/results/</span>.
+      Dados <strong>demo</strong> não são evidência de produção.
+    </p>
+    <input type="file" id="file" accept="application/json" />
+  </div>
+
+  <div class="panel">
+    <h2>Antes × Depois (premissas)</h2>
+    <p class="note">
+      Premissas em <span class="mono">PERFORMANCE.md</span>.
+      Manual = tempo estimado de consolidar GitHub UI + resumo + envio (premissa).
+      Automatizado = <span class="mono">total_pipeline_latency_ms</span> medido no último pipeline (coleta+LLM+TTS+SQLite).
+    </p>
+    <div class="bar-wrap"><span class="bar-label">Manual</span><div class="bar-track"><div class="bar-fill" style="width:100%"></div></div><span class="mono" id="manual-t">—</span></div>
+    <div class="bar-wrap"><span class="bar-label">Automatizado</span><div class="bar-track"><div class="bar-fill" id="auto-bar" style="width:8%;background:var(--ok)"></div></div><span class="mono" id="auto-t">—</span></div>
+  </div>
+
+  <script>
+    function el(id) { return document.getElementById(id); }
+
+    function render(data) {
+      const m = data.metrics || {};
+      const cards = [
+        ["Commits", m.commits ?? 0],
+        ["PRs abertos", m.pull_requests_opened ?? 0],
+        ["Issues abertas", m.issues_opened ?? 0],
+        ["CI runs", m.workflow_runs ?? 0],
+        ["CI sucesso %", m.workflow_success_rate ?? 0],
+        ["Alertas", (data.alerts || []).length],
+      ];
+      el("cards").innerHTML = cards.map(([label, value]) =>
+        `<div class="card"><div class="label">${label}</div><div class="value">${value}</div></div>`
+      ).join("");
+
+      const alerts = data.alerts || [];
+      el("alerts").innerHTML = alerts.length
+        ? alerts.map(a => `<div class="alert ${a.severity}"><strong>${a.type}</strong> — ${a.message}</div>`).join("")
+        : `<div class="note">Nenhum alerta no período.</div>`;
+
+      const t = data.timings || {};
+      const fmtMs = (ms) => {
+        if (ms > 0) return ms + " ms";
+        // estágios em memória (métricas/alertas) costumam terminar em <1 ms
+        return "<1 ms";
+      };
+      const stages = [
+        ["Coleta", t.collection_latency_ms || 0],
+        ["Métricas", t.metrics_latency_ms || 0],
+        ["LLM", t.llm_latency_ms || 0],
+        ["TTS", t.tts_latency_ms || 0],
+        ["Persist", t.persistence_latency_ms || 0],
+      ];
+      const max = Math.max(1, ...stages.map(s => s[1]));
+      el("timings").innerHTML = stages.map(([name, ms]) =>
+        `<div class="bar-wrap"><span class="bar-label">${name}</span><div class="bar-track"><div class="bar-fill" style="width:${ms > 0 ? (ms / max) * 100 : 2}%"></div></div><span class="mono">${fmtMs(ms)}</span></div>`
+      ).join("") + `<p class="note">Total pipeline medido: <span class="mono">${t.total_pipeline_latency_ms ?? 0} ms</span> · Métricas/alertas são cálculo em memória (tipicamente &lt;1 ms).</p>`;
+
+      const row = `
+        <tr>
+          <td class="mono">${data.execution_id || "—"}</td>
+          <td><span class="badge ${data.status || "success"}">${data.status || "—"}</span></td>
+          <td>${m.commits ?? 0}</td>
+          <td>${m.workflow_success_rate ?? 0}</td>
+          <td class="mono">${t.total_pipeline_latency_ms ?? 0} ms</td>
+        </tr>`;
+      el("exec-body").innerHTML = row + el("exec-body").innerHTML;
+
+      el("source-badge").textContent = data.data_source || "—";
+      el("source-badge").className = "badge " + (data.data_source === "demo" ? "demo" : "success");
+
+      // Antes × Depois — premissas documentadas em PERFORMANCE.md
+      // Manual: premissa do contexto (X min). Automatizado: total_pipeline_latency_ms medido.
+      const MANUAL_MS = 25 * 60 * 1000; // 25 min — premissa PERFORMANCE.md
+      const autoMs = t.total_pipeline_latency_ms || 0;
+      el("manual-t").textContent = "25 min (premissa)";
+      if (autoMs > 0) {
+        const autoMin = (autoMs / 60000).toFixed(1);
+        el("auto-t").textContent = `${autoMin} min (${autoMs} ms medido)`;
+        el("auto-bar").style.width = Math.max(8, Math.min(100, (autoMs / MANUAL_MS) * 100)) + "%";
+      } else {
+        el("auto-t").textContent = "rode o pipeline p/ medir";
+      }
+    }
+
+    el("file").addEventListener("change", async (e) => {
+      const f = e.target.files[0];
+      if (!f) return;
+      const text = await f.text();
+      render(JSON.parse(text));
+    });
+
+    function pickBestTiming(item) {
+      if (!item) return null;
+      let t = item.timings;
+      if (!t && item.timings_json) {
+        try { t = typeof item.timings_json === "string" ? JSON.parse(item.timings_json) : item.timings_json; } catch (_) {}
+      }
+      if (!t || !t.total_pipeline_latency_ms) return null;
+      const full = (t.llm_latency_ms || 0) > 0 || (t.tts_latency_ms || 0) > 0;
+      return {
+        timings: t,
+        full,
+        summary: item.summary,
+        audio_path: item.audio_path,
+        status: item.status,
+        execution_id: item.execution_id,
+      };
+    }
+
+    async function loadBestPipelineTimings() {
+      let fallback = null;
+      try {
+        const ex = await fetch("http://127.0.0.1:8000/api/executions?limit=40", { cache: "no-store" });
+        if (ex.ok) {
+          const items = (await ex.json()).items || [];
+          for (const item of items) {
+            const best = pickBestTiming(item);
+            if (!best) continue;
+            if (best.full) return best;          // pipeline completo primeiro
+            if (!fallback) fallback = best;      // senão o primeiro com total > 0
+          }
+          if (fallback) return fallback;
+        }
+      } catch (_) {}
+      try {
+        const res = await fetch("data/results/dashboard-data.json", { cache: "no-store" });
+        if (res.ok) {
+          const data = await res.json();
+          return pickBestTiming({ timings: data.timings, summary: data.summary, audio_path: data.audio_path, status: data.status, execution_id: data.execution_id });
+        }
+      } catch (_) {}
+      return null;
+    }
+
+    async function loadLive() {
+      const bases = [
+        "http://127.0.0.1:8000/api/pulse?hours=24",
+        "../data/results/dashboard-data.json",
+        "data/results/dashboard-data.json",
+      ];
+      for (const url of bases) {
+        try {
+          const res = await fetch(url, { cache: "no-store" });
+          if (!res.ok) continue;
+          const data = await res.json();
+          if (data && data.execution_id) {
+            // /api/pulse só mede coleta — sobrepõe timings do último pipeline completo
+            const best = await loadBestPipelineTimings();
+            if (best && best.timings) {
+              data.timings = best.timings;
+              if (best.summary && !data.summary) data.summary = best.summary;
+              if (best.audio_path && !data.audio_path) data.audio_path = best.audio_path;
+            }
+            render(data);
+            el("source-badge").title = "carregado de " + url;
+            return true;
+          }
+        } catch (_) {}
+      }
+      return false;
+    }
+
+    // amostra embutida só se API e JSON local estiverem fora do ar
+    loadLive().then((ok) => {
+      if (!ok) {
+        render({
+          execution_id: "PULSE-SAMPLE-0001",
+          status: "partial",
+          data_source: "demo",
+          metrics: {
+            commits: 8, pull_requests_opened: 5, issues_opened: 6,
+            workflow_runs: 7, workflow_success_rate: 71.4
+          },
+          alerts: [
+            { type: "CI_FAILURE", severity: "high", message: "2 execuções de CI/CD com falha (amostra)." }
+          ],
+          timings: {
+            collection_latency_ms: 120, metrics_latency_ms: 5, llm_latency_ms: 0,
+            tts_latency_ms: 0, persistence_latency_ms: 8, total_pipeline_latency_ms: 140
+          }
+        });
+      }
+    });
+  </script>
+</body>
+</html>

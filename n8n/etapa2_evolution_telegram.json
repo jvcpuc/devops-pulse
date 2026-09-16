@@ -1,0 +1,114 @@
+{
+  "id": "devops-pulse-etapa2-evo-tg",
+  "name": "DevOps Pulse AI — Etapa 2 (Evolution WhatsApp + Telegram)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "hours", "hoursInterval": 24 }]
+        }
+      },
+      "id": "sched",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.APP_BASE_URL || 'http://host.docker.internal:8000' }}/api/pipeline/run",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "hours", "value": "24" },
+            { "name": "with_llm", "value": "true" },
+            { "name": "with_tts", "value": "true" },
+            { "name": "persist", "value": "true" }
+          ]
+        },
+        "options": { "timeout": 300000 }
+      },
+      "id": "http-pulse",
+      "name": "Microsserviço",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nif (!item?.execution_id) throw new Error('sem execution_id');\nif (item.status === 'error') throw new Error((item.errors||[]).join('; '));\nconst alerts = (item.alerts||[]).map(a => `${a.type}: ${a.message}`).join('\\n') || 'Nenhum';\nconst text = `[DevOps Pulse] ${item.execution_id}\\nStatus: ${item.status}\\nRepo: ${item.repository}\\nCommits: ${item.metrics.commits} | PRs: ${item.metrics.pull_requests_opened} | CI: ${item.metrics.workflow_success_rate}%\\n\\nResumo:\\n${(item.summary||'').slice(0,900)}\\n\\nAlertas:\\n${alerts}`;\nreturn [{ json: { ...item, notify_text: text } }];"
+      },
+      "id": "prep",
+      "name": "Preparar texto",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($env.WHATSAPP_API_URL || 'http://host.docker.internal:8080') + '/message/sendText/' + ($env.EVOLUTION_INSTANCE || 'devops-pulse') }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.EVOLUTION_API_KEY || $env.WHATSAPP_TOKEN }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $env.WHATSAPP_TO, text: $json.notify_text }) }}",
+        "options": { "timeout": 30000 }
+      },
+      "id": "whatsapp-evo",
+      "name": "WhatsApp Evolution",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, -80],
+      "onError": "continueRegularOutput",
+      "disabled": false
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'https://api.telegram.org/bot' + $env.TELEGRAM_BOT_TOKEN + '/sendMessage?chat_id=' + $env.TELEGRAM_CHAT_ID + '&text=' + encodeURIComponent($json.notify_text) }}",
+        "options": { "timeout": 20000 }
+      },
+      "id": "telegram",
+      "name": "Telegram",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 80],
+      "onError": "continueRegularOutput",
+      "disabled": false
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nconst log = {\n  timestamp: new Date().toISOString(),\n  execution_id: item.execution_id,\n  stage: 'notify',\n  status: 'PIPELINE_SUCCESS',\n  channels: { whatsapp_attempted: true, telegram_attempted: !!$env.TELEGRAM_BOT_TOKEN }\n};\nconsole.log(JSON.stringify(log));\nreturn [{ json: { ...item, notify_log: log } }];"
+      },
+      "id": "log",
+      "name": "Log final",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 0]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": { "main": [[{ "node": "Microsserviço", "type": "main", "index": 0 }]] },
+    "Microsserviço": { "main": [[{ "node": "Preparar texto", "type": "main", "index": 0 }]] },
+    "Preparar texto": {
+      "main": [
+        [
+          { "node": "WhatsApp Evolution", "type": "main", "index": 0 },
+          { "node": "Telegram", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "WhatsApp Evolution": { "main": [[{ "node": "Log final", "type": "main", "index": 0 }]] },
+    "Telegram": { "main": [[{ "node": "Log final", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "active": false,
+  "pinData": {}
+}

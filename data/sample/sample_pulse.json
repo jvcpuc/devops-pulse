@@ -1,0 +1,27 @@
+{
+  "generated_at": "2026-09-15T20:00:00+00:00",
+  "_notice": "AMOSTRA de payload — dados fictícios para documentação/testes.",
+  "repository": "demo/devops-pulse",
+  "metrics": {
+    "commits": 8,
+    "issues_opened": 6,
+    "issues_closed": 3,
+    "pull_requests_opened": 5,
+    "pull_requests_closed": 2,
+    "stale_pull_requests": 3,
+    "open_issues": 3,
+    "workflow_runs": 7,
+    "workflow_success": 5,
+    "workflow_failure": 2,
+    "workflow_success_rate": 71.43
+  },
+  "alerts": [
+    {
+      "type": "CI_FAILURE",
+      "severity": "high",
+      "message": "Foram identificadas 2 execuções de CI/CD com falha no período."
+    }
+  ],
+  "status": "partial",
+  "data_source": "demo"
+}

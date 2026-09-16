@@ -1,0 +1,148 @@
+{
+  "name": "DevOps Pulse AI — Etapa 2 (Multicanal)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 24
+            }
+          ]
+        }
+      },
+      "id": "trigger-schedule",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.APP_BASE_URL || 'http://127.0.0.1:8000' }}/api/pipeline/run",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "hours", "value": "24" },
+            { "name": "with_llm", "value": "true" },
+            { "name": "with_tts", "value": "true" },
+            { "name": "persist", "value": "true" }
+          ]
+        },
+        "options": { "timeout": 180000 }
+      },
+      "id": "http-pipeline",
+      "name": "Microsserviço",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Valida payload e preserva execution_id em todo o fluxo\nconst item = $input.first().json;\nif (!item || !item.execution_id) {\n  throw new Error('Payload sem execution_id');\n}\nif (item.status === 'error') {\n  throw new Error(`Pipeline error: ${(item.errors || []).join('; ')}`);\n}\nreturn [{ json: item }];"
+      },
+      "id": "validate",
+      "name": "Validação",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 0]
+    },
+    {
+      "parameters": {
+        "content": "## Análise IA\n\nO LLM (Ollama) já foi chamado pelo microsserviço.\nAqui apenas ecoamos `summary` e `alerts`.\nRegra: o LLM interpreta; a fonte primária é a API.",
+        "height": 110,
+        "width": 260
+      },
+      "id": "note-ia",
+      "name": "Análise IA",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [660, -100]
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $env.SMTP_FROM }}",
+        "toEmail": "={{ $env.SMTP_TO }}",
+        "subject": "= [DevOps Pulse] {{ $json.execution_id }} — {{ $json.status }}",
+        "emailFormat": "text",
+        "text": "=Resumo:\n{{ $json.summary || '(sem resumo)' }}\n\nAlertas:\n{{ ($json.alerts || []).map(a => a.type + ': ' + a.message).join('\\n') || 'Nenhum' }}\n\nMetrics:\n{{ JSON.stringify($json.metrics) }}\n\nexecution_id: {{ $json.execution_id }}",
+        "options": {}
+      },
+      "id": "email",
+      "name": "E-mail",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [880, -60],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.WHATSAPP_API_URL }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $env.WHATSAPP_TOKEN }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ to: $env.WHATSAPP_TO, message: '[DevOps Pulse] ' + $json.execution_id + '\\n' + ($json.summary || 'sem resumo').slice(0, 800) }) }}",
+        "options": { "timeout": 20000 }
+      },
+      "id": "whatsapp",
+      "name": "WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [880, 80],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Log final — mantém execution_id e status por canal\nconst item = $input.first().json;\nconst waEnabled = String($env.WHATSAPP_ENABLED || 'false') === 'true';\nconst log = {\n  timestamp: new Date().toISOString(),\n  execution_id: item.execution_id,\n  stage: 'notify',\n  status: 'PIPELINE_SUCCESS',\n  email_attempted: true,\n  whatsapp_enabled: waEnabled\n};\nconsole.log(JSON.stringify(log));\nreturn [{ json: { ...item, notify_log: log } }];"
+      },
+      "id": "log-final",
+      "name": "Log final",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1100, 0]
+    },
+    {
+      "parameters": {
+        "content": "## WhatsApp\n\nDefina WHATSAPP_ENABLED=true e credenciais em .env / variáveis do n8n.\nSe falhar: e-mail permanece; registrar WHATSAPP_ERROR.",
+        "height": 100,
+        "width": 240
+      },
+      "id": "note-wa",
+      "name": "Nota WhatsApp",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [660, 160]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [[{ "node": "Microsserviço", "type": "main", "index": 0 }]]
+    },
+    "Microsserviço": {
+      "main": [[{ "node": "Validação", "type": "main", "index": 0 }]]
+    },
+    "Validação": {
+      "main": [[{ "node": "E-mail", "type": "main", "index": 0 }]]
+    },
+    "E-mail": {
+      "main": [[{ "node": "WhatsApp", "type": "main", "index": 0 }]]
+    },
+    "WhatsApp": {
+      "main": [[{ "node": "Log final", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "pinData": {}
+}
