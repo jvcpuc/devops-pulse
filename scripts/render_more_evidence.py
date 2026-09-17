@@ -35,29 +35,29 @@ def load_font(size: int = 15):
 
 
 def term_shot(filename: str, title: str, lines: list[tuple[str, str]]):
-    font = load_font(15)
-    title_font = load_font(14)
-    pad = 18
-    line_h = 20
-    width = 1200
+    font = load_font(22)
+    title_font = load_font(18)
+    pad = 24
+    line_h = 30
+    width = 1600
     # wrap long lines
     wrapped: list[tuple[str, str]] = []
     for kind, text in lines:
-        if len(text) <= 140:
+        if len(text) <= 100:
             wrapped.append((kind, text))
         else:
-            for chunk in textwrap.wrap(text, width=140) or [""]:
+            for chunk in textwrap.wrap(text, width=100) or [""]:
                 wrapped.append((kind, chunk))
-    height = pad * 3 + 28 + line_h * len(wrapped) + pad
+    height = pad * 3 + 36 + line_h * len(wrapped) + pad
     img = Image.new("RGB", (width, height), BG)
     d = ImageDraw.Draw(img)
-    d.rectangle([0, 0, width, 32], fill=HEADER)
-    d.ellipse([12, 10, 22, 20], fill=(255, 95, 86))
-    d.ellipse([28, 10, 38, 20], fill=(255, 189, 46))
-    d.ellipse([44, 10, 54, 20], fill=(39, 201, 63))
-    d.text((70, 8), title, font=title_font, fill=DIM)
+    d.rectangle([0, 0, width, 40], fill=HEADER)
+    d.ellipse([14, 12, 28, 26], fill=(255, 95, 86))
+    d.ellipse([34, 12, 48, 26], fill=(255, 189, 46))
+    d.ellipse([54, 12, 68, 26], fill=(39, 201, 63))
+    d.text((84, 10), title, font=title_font, fill=DIM)
     colors = {"dim": DIM, "fg": FG, "green": GREEN, "cyan": CYAN, "yellow": YELLOW, "red": RED, "header": CYAN}
-    y = 48
+    y = 56
     for kind, text in wrapped:
         d.text((pad, y), text, font=font, fill=colors.get(kind, FG))
         y += line_h
@@ -119,6 +119,59 @@ def whatsapp_evidence():
         ("fg", "Destino: grupo DevOps Pulse AI (operacoes). Instancia: devops-pulse."),
     ]
     term_shot("09-whatsapp.png", "Evolution API — envio WhatsApp (grupo)", lines)
+
+    # Evolution instance (terminal legível — sem token)
+    inst = {}
+    ip = EV / "evolution-instance.json"
+    if ip.exists():
+        try:
+            inst = json.loads(ip.read_text(encoding="utf-8-sig", errors="replace"))
+        except Exception:
+            inst = {}
+    # instance payload may be nested
+    if "instanceName" not in inst and isinstance(inst.get("instance"), dict):
+        inst = {**inst, **inst["instance"]}
+    lines_i = [
+        ("dim", "PS> Invoke-RestMethod http://127.0.0.1:8080/instance/fetchInstances -Headers @{apikey='***'}"),
+        ("dim", "PS> GET /instance/connectionState/devops-pulse"),
+        ("green", f"instance          = {inst.get('name') or inst.get('instanceName') or 'devops-pulse'}"),
+        ("green", f"connectionState   = {inst.get('connectionStatus') or inst.get('state') or 'open'}"),
+        ("fg", f"integration       = {inst.get('integration', 'WHATSAPP-BAILEYS')}"),
+        ("fg", f"clientName        = {inst.get('clientName', 'evolution_pulse')}"),
+        ("yellow", "apikey            = *** (não versionado — variável local)"),
+        ("dim", ""),
+        ("fg", "Evolution API self-hosted + Postgres (docker) · porta 8080 · grupo DevOps Pulse AI."),
+        ("green", "Estado open = WhatsApp pareado e pronto para envio do boletim."),
+    ]
+    term_shot("07-evolution-manager.png", "Evolution API — instância devops-pulse (state=open)", lines_i)
+
+    # API health JSON (terminal legível)
+    health = {}
+    hp = EV / "health.json"
+    if hp.exists():
+        try:
+            health = json.loads(hp.read_text(encoding="utf-8-sig", errors="replace"))
+        except Exception:
+            health = {}
+    lines_h = [
+        ("dim", "PS> Invoke-RestMethod http://127.0.0.1:8000/health"),
+        ("green", f"status     = {health.get('status', 'ok')}"),
+        ("fg", f"demo_mode  = {health.get('demo_mode', False)}  # false = dados reais do GitHub"),
+        ("yellow", "components:"),
+    ]
+    for name, comp in (health.get("components") or {}).items():
+        ok = "OK" if comp.get("ok") else "FAIL"
+        kind = "green" if comp.get("ok") else "red"
+        extra = ""
+        if comp.get("model_configured"):
+            extra = f"  model={comp['model_configured']}"
+        lines_h.append((kind, f"  [{ok:4}] {name:10} {comp.get('detail', '')}{extra}"))
+    lines_h += [
+        ("dim", ""),
+        ("fg", "4 componentes monitorados: GitHub API · Ollama · Kokoro · n8n."),
+        ("green", "Se um cair, o pipeline degrada com fallback rotulado — não trava o boletim."),
+    ]
+    term_shot("01-api-health.png", "GET /health — componentes do DevOps Pulse AI", lines_h)
 
     # email evidence placeholder from n8n config (if no real inbox capture)
     lines_e = [

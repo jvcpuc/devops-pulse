@@ -116,6 +116,11 @@ def img(path: Path, max_w_mm: float = 170, max_h_mm: float = 110):
     return Image(str(path), width=w * scale, height=h * scale, kind="proportional")
 
 
+def term_img(path: Path, max_h_mm: float = 90):
+    """Terminal/UI evidence: always use full page width for readability."""
+    return img(path, max_w_mm=174, max_h_mm=max_h_mm)
+
+
 def caption(text: str, S):
     return Paragraph(text, S["Caption"])
 
@@ -304,21 +309,45 @@ def build():
         S["Body"],
     ))
     story.append(Paragraph("Saúde do sistema (componentes reais)", S["H2"]))
-    story.append(img(EV / "02-python.png", 170, 55))
+    story.append(term_img(EV / "02-python.png", 75))
     story.append(caption("Fig. 2 — /health: GitHub, Ollama, Kokoro e n8n OK · demo_mode=false.", S))
-    story.append(Paragraph("LLM local — Ollama", S["H2"]))
-    story.append(img(EV / "04-ollama.png", 150, 40))
-    story.append(caption("Fig. 3 — Modelo llama3.2:1b disponível no Ollama local.", S))
-    story.append(Paragraph("TTS local — Kokoro", S["H2"]))
-    story.append(img(EV / "05-kokoro.png", 160, 40))
-    story.append(caption("Fig. 4 — Áudios .wav gerados (voz pf_dora).", S))
-    story.append(Paragraph("n8n — workflows importados", S["H2"]))
-    story.append(img(EV / "03-n8n-etapa1.png", 170, 70))
-    story.append(caption("Fig. 5 — Workflows DevOps Pulse listados no n8n (CLI + API).", S))
-    story.append(img(EV / "03-n8n-etapa1-diagram.png", 170, 40))
-    story.append(caption("Fig. 6 — Diagrama da Etapa 1: Manual Trigger → HTTP pipeline → IF success.", S))
-    story.append(img(EV / "07-n8n-etapa2.png", 170, 55))
-    story.append(caption("Fig. 7 — Etapa 2 multicanal (e-mail / WhatsApp / Telegram) com onError continue.", S))
+    story.append(Paragraph("Infra local — Docker Desktop (containers no ar)", S["H2"]))
+    story.append(term_img(EV / "n8n_1.png", 90))
+    story.append(caption(
+        "Fig. 3 — Docker Desktop: n8n (:5678), kokoro (:8880), evo-postgres (:5433) e evolution-api (:8080) em execução.",
+        S,
+    ))
+    story.append(PageBreak())
+    story.append(Paragraph("LLM local — Ollama · TTS local — Kokoro", S["H2"]))
+    story.append(term_img(EV / "04-ollama.png", 55))
+    story.append(caption("Fig. 4 — Modelo llama3.2:1b no Ollama local.", S))
+    story.append(term_img(EV / "05-kokoro.png", 45))
+    story.append(caption("Fig. 5 — Áudios .wav gerados pelo Kokoro (voz pf_dora).", S))
+    story.append(PageBreak())
+
+    story.append(Paragraph("3.1 n8n — workflows no editor", S["H2"]))
+    story.append(Paragraph(
+        "Workflows importados e prontos para execução (UI do n8n). "
+        "Etapa 1 orquestra o microsserviço; Etapa 2 entrega em WhatsApp/Telegram/e-mail.",
+        S["Body"],
+    ))
+    story.append(term_img(EV / "n8n.png", 95))
+    story.append(caption(
+        "Fig. 6 — n8n UI · Etapa 2 (Evolution WhatsApp + Telegram): "
+        "Schedule → Microsserviço → Preparar texto → WhatsApp/Telegram → Log final.",
+        S,
+    ))
+    story.append(PageBreak())
+    story.append(term_img(EV / "n8n_2.png", 95))
+    story.append(caption(
+        "Fig. 7 — n8n UI · Etapa 2 (Multicanal): "
+        "Schedule → Microsserviço → Validação → E-mail/WhatsApp → Log final.",
+        S,
+    ))
+    story.append(term_img(EV / "03-n8n-etapa1-diagram.png", 45))
+    story.append(caption("Fig. 8 — Diagrama da Etapa 1: Manual Trigger → HTTP pipeline → IF success.", S))
+    story.append(term_img(EV / "03-n8n-etapa1.png", 70))
+    story.append(caption("Fig. 9 — Workflows DevOps Pulse listados no n8n (CLI + API).", S))
     story.append(PageBreak())
 
     # 4 PROTOTIPO
@@ -340,13 +369,14 @@ def build():
         ["Latência total", "82 549 ms (coleta 5,5 s · LLM 58,5 s · TTS 18,6 s · persist 11 ms)"],
         ["Saídas", "JSON + summary + audio .wav + linha SQLite"],
     ], col_widths=[40 * mm, 130 * mm]))
-    story.append(Spacer(1, 3 * mm))
-    story.append(Paragraph("API /api/pulse — métricas reais", S["H2"]))
-    story.append(img(EV / "01-api-text.png", 170, 70))
-    story.append(caption("Fig. 8 — Payload com metrics, alerts, timings e data_source=github.", S))
+    story.append(Spacer(1, 4 * mm))
+    story.append(Paragraph("API /api/pulse — métricas reais (terminal)", S["H2"]))
+    story.append(term_img(EV / "01-api-text.png", 95))
+    story.append(caption("Fig. 10 — Payload com metrics, alerts, timings e data_source=github.", S))
+    story.append(PageBreak())
     story.append(Paragraph("Logs estruturados do pipeline", S["H2"]))
-    story.append(img(EV / "12-logs.png", 170, 70))
-    story.append(caption("Fig. 9 — logs/app.log com etapas e execution_id.", S))
+    story.append(term_img(EV / "12-logs.png", 120))
+    story.append(caption("Fig. 11 — logs/app.log com etapas e execution_id.", S))
     story.append(PageBreak())
 
     story.append(Paragraph("4.1 Persistência — SQLite (grid para apresentação)", S["H2"]))
@@ -355,20 +385,21 @@ def build():
         "com badge da <b>fonte dos dados</b> (github vs demo).",
         S["Body"],
     ))
-    story.append(img(EV / "06b-sqlite-grid.png", 170, 120))
-    story.append(caption("Fig. 10 — Grid de execuções do SQLite com fonte, status, métricas e latência.", S))
-    story.append(img(EV / "06-planilha.png", 170, 50))
-    story.append(caption("Fig. 11 — Tabela executions no banco pulse.db.", S))
+    story.append(img(EV / "06b-sqlite-grid.png", 174, 125))
+    story.append(caption("Fig. 12 — Grid de execuções do SQLite com fonte, status, métricas e latência.", S))
+    story.append(term_img(EV / "06-planilha.png", 60))
+    story.append(caption("Fig. 13 — Tabela executions no banco pulse.db.", S))
     story.append(PageBreak())
 
     story.append(Paragraph("4.2 Dashboard executivo", S["H2"]))
-    story.append(img(EV / "10-dashboard.png", 170, 110))
-    story.append(caption("Fig. 12 — Cards, alertas, latências por etapa e antes × depois.", S))
+    story.append(img(EV / "10-dashboard.png", 174, 115))
+    story.append(caption("Fig. 14 — Cards, alertas, latências por etapa e antes × depois.", S))
+    story.append(PageBreak())
     story.append(Paragraph("4.3 Robustez — testes e stress", S["H2"]))
-    story.append(img(EV / "02b-pytest.png", 170, 70))
-    story.append(caption("Fig. 13 — pytest: 21 passed.", S))
-    story.append(img(EV / "11-stress-test.png", 170, 40))
-    story.append(caption("Fig. 14 — Stress test /api/pulse (10/25/50 req, 100% sucesso).", S))
+    story.append(term_img(EV / "02b-pytest.png", 85))
+    story.append(caption("Fig. 15 — pytest: 21 passed.", S))
+    story.append(term_img(EV / "11-stress-test.png", 50))
+    story.append(caption("Fig. 16 — Stress test /api/pulse (10/25/50 req, 100% sucesso).", S))
     story.append(PageBreak())
 
     # 5 WHATSAPP
@@ -386,14 +417,14 @@ def build():
     story.append(Paragraph("Comprovação de entrega no WhatsApp (grupo DevOps Pulse AI)", S["H2"]))
     story.append(img(EV / "whatsapp.png", 168, 125))
     story.append(caption(
-        "Fig. 15 — Conversa WhatsApp: boletim completo PULSE-20260917-124330-A359 "
+        "Fig. 17 — Conversa WhatsApp: boletim completo PULSE-20260917-124330-A359 "
         "(repo n8n-io/n8n · fonte github · CI 63% · alertas + stress + pipeline).",
         S,
     ))
-    story.append(img(EV / "09-whatsapp.png", 160, 50))
-    story.append(caption("Fig. 16 — Comprovante de envio via Evolution API (key + remoteJid do grupo).", S))
-    story.append(img(EV / "07-evolution-manager.png", 140, 40))
-    story.append(caption("Fig. 17 — Evolution API / instância devops-pulse (state=open).", S))
+    story.append(term_img(EV / "09-whatsapp.png", 70))
+    story.append(caption("Fig. 18 — Comprovante de envio via Evolution API (key + remoteJid do grupo).", S))
+    story.append(term_img(EV / "07-evolution-manager.png", 80))
+    story.append(caption("Fig. 19 — Evolution API / instância devops-pulse (connectionState=open · WhatsApp pareado).", S))
     story.append(PageBreak())
 
     # 6 PERFORMANCE
@@ -443,17 +474,21 @@ def build():
     # 8 ANEXOS
     story.append(Paragraph("8. Anexos — evidências adicionais", S["H1"]))
     extras = [
-        ("13-github-actions.png", "Actions/CI do repositório monitorado"),
-        ("13-github-pulls.png", "Pull requests abertos (fila manual hoje)"),
-        ("01-api-health.png", "Resposta JSON de /health no navegador"),
-        ("03-n8n-login.png", "UI do n8n protegida (login do owner)"),
-        ("08-email.png", "Canal de e-mail (reserva) documentado"),
+        ("13-github-actions.png", "Actions/CI do repositório monitorado", 70),
+        ("13-github-pulls.png", "Pull requests abertos (fila manual hoje)", 70),
+        ("01-api-health.png", "GET /health — componentes do sistema (terminal)", 80),
+        ("n8n_3.png", "n8n UI — workflow de teste FastAPI (Webhook → HTTP Request)", 80),
+        ("03-n8n-login.png", "UI do n8n protegida (login do owner)", 50),
+        ("08-email.png", "Canal de e-mail (reserva) documentado", 40),
     ]
-    for name, title in extras:
+    for name, title, h in extras:
         p = EV / name
         if p.exists():
             story.append(Paragraph(title, S["H2"]))
-            story.append(img(p, 165, 70))
+            if name.startswith("n8n_") or "api-health" in name or name.startswith("0"):
+                story.append(term_img(p, h))
+            else:
+                story.append(img(p, 170, h))
             story.append(caption("Fig. anexa — %s" % name, S))
     story.append(Spacer(1, 6 * mm))
     story.append(Paragraph(

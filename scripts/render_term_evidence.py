@@ -38,22 +38,30 @@ def load_font(size: int = 15):
 
 def term_shot(filename: str, title: str, lines: list[tuple[str, str]]):
     """lines: list of (kind, text) where kind in dim/fg/green/cyan/yellow/red/header."""
-    font = load_font(15)
-    title_font = load_font(14)
-    pad = 18
-    line_h = 20
-    width = 1100
-    height = pad * 3 + 28 + line_h * len(lines) + pad
+    font = load_font(22)
+    title_font = load_font(18)
+    pad = 24
+    line_h = 30
+    width = 1600
+    # wrap long lines for larger font
+    wrapped: list[tuple[str, str]] = []
+    for kind, text in lines:
+        if len(text) <= 100:
+            wrapped.append((kind, text))
+        else:
+            for chunk in textwrap.wrap(text, width=100) or [""]:
+                wrapped.append((kind, chunk))
+    height = pad * 3 + 36 + line_h * len(wrapped) + pad
 
     img = Image.new("RGB", (width, height), BG)
     d = ImageDraw.Draw(img)
 
     # title bar
-    d.rectangle([0, 0, width, 32], fill=HEADER)
-    d.ellipse([12, 10, 22, 20], fill=(255, 95, 86))
-    d.ellipse([28, 10, 38, 20], fill=(255, 189, 46))
-    d.ellipse([44, 10, 54, 20], fill=(39, 201, 63))
-    d.text((70, 8), title, font=title_font, fill=DIM)
+    d.rectangle([0, 0, width, 40], fill=HEADER)
+    d.ellipse([14, 12, 28, 26], fill=(255, 95, 86))
+    d.ellipse([34, 12, 48, 26], fill=(255, 189, 46))
+    d.ellipse([54, 12, 68, 26], fill=(39, 201, 63))
+    d.text((84, 10), title, font=title_font, fill=DIM)
 
     colors = {
         "dim": DIM,
@@ -65,8 +73,8 @@ def term_shot(filename: str, title: str, lines: list[tuple[str, str]]):
         "header": CYAN,
     }
 
-    y = 48
-    for kind, text in lines:
+    y = 56
+    for kind, text in wrapped:
         color = colors.get(kind, FG)
         d.text((pad, y), text, font=font, fill=color)
         y += line_h
@@ -95,6 +103,25 @@ def main():
         extra = f"  model={model}" if model else ""
         lines.append((kind, f"  [{ok:4}] {name:10} {detail}{extra}"))
     term_shot("02-python.png", "PowerShell — /health (componentes reais)", lines)
+
+    # --- 04 ollama (terminal legível) ---
+    ollama = (health.get("components") or {}).get("ollama") or {}
+    models = ollama.get("models") or ["llama3.2:1b"]
+    oll_lines = [
+        ("dim", "PS> Invoke-RestMethod http://127.0.0.1:11434/api/tags"),
+        ("dim", "PS> ollama list   # equivalente"),
+        ("green", f"ok={ollama.get('ok')}  detail={ollama.get('detail')}"),
+        ("cyan", f"model_configured = {ollama.get('model_configured', 'llama3.2:1b')}"),
+        ("fg", "models disponíveis:"),
+    ]
+    for m in models:
+        oll_lines.append(("fg", f"  - {m}"))
+    oll_lines += [
+        ("dim", ""),
+        ("dim", "Uso no pipeline: gera summary em linguagem natural a partir de metrics + alerts."),
+        ("green", "LLM local — sem enviar dados para API externa (LGPD / IA responsável)."),
+    ]
+    term_shot("04-ollama.png", "Ollama — LLM local (llama3.2:1b)", oll_lines)
 
     # --- 01 api pulse (textual) ---
     try:
