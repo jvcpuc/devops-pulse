@@ -1,0 +1,60 @@
+{
+    "generated_at":  "2026-09-17T12:43:12.850003+00:00",
+    "execution_id":  "PULSE-20260917-124306-9F69",
+    "repository":  "n8n-io/n8n",
+    "period":  {
+                   "from":  "2026-09-16T12:43:06.121672Z",
+                   "to":  "2026-09-17T12:43:06.121672Z"
+               },
+    "metrics":  {
+                    "commits":  56,
+                    "issues_opened":  13,
+                    "issues_closed":  4,
+                    "pull_requests_opened":  55,
+                    "pull_requests_closed":  34,
+                    "stale_pull_requests":  14,
+                    "open_issues":  9,
+                    "workflow_runs":  100,
+                    "workflow_success":  63,
+                    "workflow_failure":  1,
+                    "workflow_success_rate":  63.0
+                },
+    "alerts":  [
+                   {
+                       "type":  "CI_FAILURE",
+                       "severity":  "high",
+                       "message":  "Foram identificadas 1 execuções de CI/CD com falha no período."
+                   },
+                   {
+                       "type":  "LOW_CI_SUCCESS_RATE",
+                       "severity":  "high",
+                       "message":  "Taxa de sucesso de CI/CD em 63.0%, abaixo do limiar de 80%."
+                   },
+                   {
+                       "type":  "STALE_PR",
+                       "severity":  "medium",
+                       "message":  "14 pull request(s) aberto(s) há mais de 3 dias."
+                   },
+                   {
+                       "type":  "HIGH_ISSUE_VOLUME",
+                       "severity":  "medium",
+                       "message":  "Volume elevado de issues abertas no período: 13 (limiar 10)."
+                   }
+               ],
+    "timings":  {
+                    "collection_latency_ms":  6728,
+                    "metrics_latency_ms":  0,
+                    "llm_latency_ms":  0,
+                    "tts_latency_ms":  0,
+                    "persistence_latency_ms":  0,
+                    "total_pipeline_latency_ms":  6728
+                },
+    "collection_latency_ms":  6728,
+    "status":  "success",
+    "data_source":  "github",
+    "summary":  null,
+    "audio_path":  null,
+    "errors":  [
+
+               ]
+}

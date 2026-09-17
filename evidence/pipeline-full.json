@@ -1,0 +1,60 @@
+{
+    "generated_at":  "2026-09-17T12:14:29.268600+00:00",
+    "execution_id":  "PULSE-20260917-121306-7999",
+    "repository":  "n8n-io/n8n",
+    "period":  {
+                   "from":  "2026-09-16T12:13:06.731821Z",
+                   "to":  "2026-09-17T12:13:06.731821Z"
+               },
+    "metrics":  {
+                    "commits":  57,
+                    "issues_opened":  13,
+                    "issues_closed":  4,
+                    "pull_requests_opened":  59,
+                    "pull_requests_closed":  32,
+                    "stale_pull_requests":  13,
+                    "open_issues":  9,
+                    "workflow_runs":  100,
+                    "workflow_success":  47,
+                    "workflow_failure":  1,
+                    "workflow_success_rate":  47.0
+                },
+    "alerts":  [
+                   {
+                       "type":  "CI_FAILURE",
+                       "severity":  "high",
+                       "message":  "Foram identificadas 1 execuções de CI/CD com falha no período."
+                   },
+                   {
+                       "type":  "LOW_CI_SUCCESS_RATE",
+                       "severity":  "high",
+                       "message":  "Taxa de sucesso de CI/CD em 47.0%, abaixo do limiar de 80%."
+                   },
+                   {
+                       "type":  "STALE_PR",
+                       "severity":  "medium",
+                       "message":  "13 pull request(s) aberto(s) há mais de 3 dias."
+                   },
+                   {
+                       "type":  "HIGH_ISSUE_VOLUME",
+                       "severity":  "medium",
+                       "message":  "Volume elevado de issues abertas no período: 13 (limiar 10)."
+                   }
+               ],
+    "timings":  {
+                    "collection_latency_ms":  5452,
+                    "metrics_latency_ms":  0,
+                    "llm_latency_ms":  58471,
+                    "tts_latency_ms":  18605,
+                    "persistence_latency_ms":  11,
+                    "total_pipeline_latency_ms":  82549
+                },
+    "collection_latency_ms":  5452,
+    "status":  "success",
+    "data_source":  "github",
+    "summary":  "RESUMO:\nO objetivo principal da análise desses indicadores é identificar áreas de melhoria e identificar riscos operacionais relevantes, priorizando a interpretação de fatos sobre interpretações.\n\nINDICADORES:\n- Produção de 57 commits em um período de 6 meses.\n- Abertura de 13 issues em um período semelhante.\n- Cierre de 4 issues em um período semelhante.\n- Abertura de 59 pull requests em um período semelhante.\n- Cierre de 32 pull requests em um período semelhante.\n- 13 pull requests abertas há mais de 3 dias.\n- Volume elevado de issues abertas em um período.\n\nALERTAS:\n- 1 execução de CI/CD com falha no período.\n- Taxa de sucesso de CI/CD em 47.0%, abaixo do limiar de 80%.\n\nRECOMENDA�?�?ES:\n- Implementar políticas de commit com mais controle para evitar problemas de integração.\n- Priorizar a abertura de pull requests em relação à abertura de issues.\n- Realizar auditorias regulares de pull requests para garantir a qualidade dos código.\n- Melhorar a comunicação com os desenvolvedores para evitar a falta de feedback.\n- Implementar um sistema de gerenciamento de issues para melhorar a eficiência de abertura e resolução de problemas.\n- Monitorar a taxa de sucesso de CI/CD para identificar áreas de melhoria.\n- Realizar auditorias regulares de pull requests para garantir a qualidade dos código.",
+    "audio_path":  "C:\\PUC\\2_Semestre\\AIFactory\\devops-pulse\\data\\results\\audio\\PULSE-20260917-121306-7999.wav",
+    "errors":  [
+
+               ]
+}

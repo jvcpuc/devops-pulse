@@ -16,3 +16,5 @@
 | **Riscos** | API indisponível, rate limit, Ollama lento, TTS fora, alucinação, vazaento de token. |
 | **Mitigações** | Retry, demo mode rotulado, fallback texto, `.env` + `.gitignore`, prompt restritivo, supervisão humana. |
 | **Entregáveis** | Microsserviço, workflows n8n, testes, stress test, dashboard, documentação, evidências, vídeo. |
+| **Papéis (equipe 6)** | **TL (1 dos 5 devs):** dono do boletim, risco de CI/PR e revisão técnica. **Devs (4):** implementação, testes, integrações e consumo do status. **PO (1):** prioridade, requisitos, aceite e visão de valor/ROI. Detalhe em `docs/diagnostico.md` §4. |
+| **Objetivos (SMART)** | O1–O10 em `PROJECT.md` (coletar, indicar, resumir, áudio, orquestrar, persistir, multicanal, robustez, performance, avaliação). |

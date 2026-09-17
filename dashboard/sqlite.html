@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DevOps Pulse AI — SQLite (execuções)</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --panel: #1a2332;
+      --ink: #e7ecf3;
+      --muted: #8b9bb4;
+      --accent: #3d9cf0;
+      --ok: #3ecf8e;
+      --warn: #f0b429;
+      --bad: #f07178;
+      --border: #2a3548;
+      --demo: #c792ea;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.45;
+      padding: 20px 24px 40px;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    h1 { font-size: 1.35rem; font-weight: 650; margin: 0 0 4px; }
+    .sub { color: var(--muted); font-size: 0.88rem; margin: 0; }
+    .db-path {
+      font-family: ui-monospace, Consolas, monospace;
+      font-size: 0.78rem;
+      color: var(--muted);
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+    }
+    .db-path strong { color: var(--ok); font-weight: 600; }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .stat {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+    }
+    .stat .label {
+      color: var(--muted);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .stat .value {
+      font-size: 1.45rem;
+      font-weight: 650;
+      margin-top: 2px;
+    }
+    .stat .value.ok { color: var(--ok); }
+    .stat .value.demo { color: var(--demo); }
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+    .chip {
+      border: 1px solid var(--border);
+      background: var(--panel);
+      color: var(--muted);
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+    .chip.active {
+      color: var(--ink);
+      border-color: var(--accent);
+      background: rgba(61, 156, 240, 0.12);
+    }
+    .chip .n { opacity: 0.7; margin-left: 4px; }
+    select, input[type="search"] {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      color: var(--ink);
+      border-radius: 8px;
+      padding: 7px 10px;
+      font-size: 0.85rem;
+    }
+    input[type="search"] { min-width: 200px; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 12px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      border-top: 3px solid var(--border);
+    }
+    .card.source-github { border-top-color: var(--ok); }
+    .card.source-demo { border-top-color: var(--demo); }
+    .card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .exec-id {
+      font-family: ui-monospace, Consolas, monospace;
+      font-size: 0.78rem;
+      color: var(--accent);
+      word-break: break-all;
+    }
+    .badges { display: flex; flex-wrap: wrap; gap: 6px; }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 650;
+      letter-spacing: 0.02em;
+    }
+    .badge.success { background: rgba(62, 207, 142, 0.15); color: var(--ok); }
+    .badge.partial { background: rgba(240, 180, 41, 0.15); color: var(--warn); }
+    .badge.error { background: rgba(240, 113, 120, 0.15); color: var(--bad); }
+    .badge.github { background: rgba(62, 207, 142, 0.15); color: var(--ok); }
+    .badge.demo { background: rgba(199, 146, 234, 0.15); color: var(--demo); }
+    .meta {
+      color: var(--muted);
+      font-size: 0.78rem;
+      display: grid;
+      gap: 2px;
+    }
+    .meta span { display: block; }
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+    .metric {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 8px;
+      padding: 6px 8px;
+      text-align: center;
+    }
+    .metric .k {
+      color: var(--muted);
+      font-size: 0.65rem;
+      text-transform: uppercase;
+    }
+    .metric .v {
+      font-weight: 650;
+      font-size: 0.95rem;
+      margin-top: 2px;
+    }
+    .latency {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+    .latency .bar-track {
+      flex: 1;
+      height: 6px;
+      background: #243044;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .latency .bar-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 3px;
+    }
+    .latency .bar-fill.demo { background: var(--demo); }
+    .footer-note {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+    .footer-note code {
+      font-family: ui-monospace, Consolas, monospace;
+      color: var(--ink);
+      background: var(--panel);
+      padding: 1px 6px;
+      border-radius: 4px;
+    }
+    .empty {
+      color: var(--muted);
+      padding: 24px;
+      text-align: center;
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+    }
+    .status-line {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+    .status-line .live { color: var(--ok); }
+    .status-line .offline { color: var(--warn); }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Histórico SQLite — execuções</h1>
+      <p class="sub">Grid de boletins persistidos · fonte dos dados destacada (github vs demo)</p>
+    </div>
+    <div class="db-path">
+      banco: <strong>data/results/pulse.db</strong> · tabela: <strong>executions</strong>
+      · <a href="index.html">← dashboard</a>
+    </div>
+  </header>
+
+  <div class="stats" id="stats"></div>
+  <p class="status-line" id="status-line">Carregando…</p>
+
+  <div class="toolbar">
+    <button class="chip active" data-filter="all">Todos <span class="n" id="n-all"></span></button>
+    <button class="chip" data-filter="github">GitHub real <span class="n" id="n-github"></span></button>
+    <button class="chip" data-filter="demo">Demo <span class="n" id="n-demo"></span></button>
+    <input type="search" id="q" placeholder="Filtrar execution_id / repo…" />
+    <select id="sort">
+      <option value="newest">Mais recentes</option>
+      <option value="oldest">Mais antigas</option>
+      <option value="latency">Maior latência</option>
+    </select>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <p class="footer-note">
+    Cada card é uma linha de <code>executions</code> no SQLite.
+    Badge <span class="badge github">github</span> = coleta real na API do GitHub.
+    Badge <span class="badge demo">demo</span> = <code>DEMO_MODE=true</code> (não serve como evidência de produção).
+    Dados ao vivo via <code>GET /api/executions</code>; se a API estiver fora, usa snapshot embutido <code>sqlite-snapshot.js</code>.
+  </p>
+
+  <script src="sqlite-snapshot.js"></script>
+  <script>
+    const API = "http://127.0.0.1:8000/api/executions?limit=50";
+    let items = [];
+    let filter = "all";
+    let sort = "newest";
+
+    function el(id) { return document.getElementById(id); }
+
+    function parseJson(raw, fallback) {
+      if (raw == null || raw === "") return fallback;
+      if (typeof raw === "object") return raw;
+      try { return JSON.parse(raw); } catch { return fallback; }
+    }
+
+    function fmtDate(iso) {
+      if (!iso) return "—";
+      try {
+        const d = new Date(iso);
+        return d.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+      } catch { return iso; }
+    }
+
+    function fmtMs(ms) {
+      if (ms == null) return "—";
+      if (ms >= 1000) return (ms / 1000).toFixed(1) + " s";
+      return Math.round(ms) + " ms";
+    }
+
+    function renderStats() {
+      const total = items.length;
+      const github = items.filter(i => i.data_source === "github").length;
+      const demo = items.filter(i => i.data_source === "demo").length;
+      const success = items.filter(i => i.status === "success").length;
+      el("n-all").textContent = total;
+      el("n-github").textContent = github;
+      el("n-demo").textContent = demo;
+      el("stats").innerHTML = [
+        ["Linhas no SQLite", total, ""],
+        ["Fonte GitHub", github, "ok"],
+        ["Fonte demo", demo, "demo"],
+        ["status=success", success, "ok"],
+      ].map(([label, value, cls]) =>
+        `<div class="stat"><div class="label">${label}</div><div class="value ${cls}">${value}</div></div>`
+      ).join("");
+    }
+
+    function cardHtml(row) {
+      const m = parseJson(row.metrics, row.metrics || {});
+      const t = parseJson(row.timings, row.timings || {});
+      const alerts = parseJson(row.alerts, row.alerts || []);
+      const src = row.data_source || "unknown";
+      const totalMs = t.total_pipeline_latency_ms || 0;
+      const maxScale = 180000;
+      const width = totalMs > 0 ? Math.min(100, (totalMs / maxScale) * 100) : 2;
+      return `
+        <article class="card source-${src}">
+          <div class="card-head">
+            <div class="exec-id">${row.execution_id || row.id || "—"}</div>
+            <div class="badges">
+              <span class="badge ${src}">${src}</span>
+              <span class="badge ${row.status || "success"}">${row.status || "—"}</span>
+            </div>
+          </div>
+          <div class="meta">
+            <span>repo: <strong style="color:var(--ink)">${row.repository || "—"}</strong></span>
+            <span>gerado: ${fmtDate(row.generated_at)}</span>
+            <span>alertas: ${alerts.length}</span>
+          </div>
+          <div class="metrics">
+            <div class="metric"><div class="k">commits</div><div class="v">${m.commits ?? "—"}</div></div>
+            <div class="metric"><div class="k">PRs</div><div class="v">${m.pull_requests_opened ?? "—"}</div></div>
+            <div class="metric"><div class="k">CI %</div><div class="v">${m.workflow_success_rate ?? "—"}</div></div>
+          </div>
+          <div class="latency">
+            <span>${fmtMs(totalMs)}</span>
+            <div class="bar-track"><div class="bar-fill ${src === "demo" ? "demo" : ""}" style="width:${width}%"></div></div>
+          </div>
+        </article>`;
+    }
+
+    function renderGrid() {
+      let list = items.slice();
+      if (filter !== "all") list = list.filter(i => i.data_source === filter);
+      const q = el("q").value.trim().toLowerCase();
+      if (q) {
+        list = list.filter(i =>
+          String(i.execution_id || "").toLowerCase().includes(q) ||
+          String(i.repository || "").toLowerCase().includes(q)
+        );
+      }
+      if (sort === "newest") {
+        list.sort((a, b) => String(b.generated_at || "").localeCompare(String(a.generated_at || "")));
+      } else if (sort === "oldest") {
+        list.sort((a, b) => String(a.generated_at || "").localeCompare(String(b.generated_at || "")));
+      } else {
+        const lat = (r) => {
+          const t = parseJson(r.timings, r.timings || {});
+          return t.total_pipeline_latency_ms || 0;
+        };
+        list.sort((a, b) => lat(b) - lat(a));
+      }
+      el("grid").innerHTML = list.length
+        ? list.map(cardHtml).join("")
+        : `<div class="empty">Nenhuma execução com esse filtro.</div>`;
+    }
+
+    function bind() {
+      document.querySelectorAll(".chip[data-filter]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          document.querySelectorAll(".chip[data-filter]").forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          filter = btn.dataset.filter;
+          renderGrid();
+        });
+      });
+      el("q").addEventListener("input", renderGrid);
+      el("sort").addEventListener("change", () => {
+        sort = el("sort").value;
+        renderGrid();
+      });
+    }
+
+    async function load() {
+      let mode = "live";
+      try {
+        const res = await fetch(API, { cache: "no-store" });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const data = await res.json();
+        items = data.items || data || [];
+      } catch (e) {
+        mode = "snapshot";
+        const snap = (typeof SQLITE_SNAPSHOT !== "undefined") ? SQLITE_SNAPSHOT : null;
+        items = (snap && snap.items) || [];
+      }
+      el("status-line").innerHTML = mode === "live"
+        ? `<span class="live">● ao vivo</span> — <code style="color:var(--ink)">GET /api/executions</code> · SQLite <code style="color:var(--ink)">pulse.db</code> · ${items.length} linha(s)`
+        : `<span class="offline">● snapshot</span> — embedido em <code style="color:var(--ink)">sqlite-snapshot.js</code> (API fora ou CORS) · ${items.length} linha(s) · fonte original SQLite`;
+      renderStats();
+      renderGrid();
+    }
+
+    bind();
+    load();
+  </script>
+</body>
+</html>

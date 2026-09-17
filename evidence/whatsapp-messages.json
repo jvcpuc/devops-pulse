@@ -1,0 +1,21 @@
+{
+  "note": "ultima mensagem enviada ao grupo (evidencia de entrega)",
+  "messages": [
+    {
+      "key": {
+        "remoteJid": "120363412036540372@g.us",
+        "fromMe": true,
+        "id": "3EB01BA36B8625DE992B73"
+      },
+      "pushName": "Você",
+      "status": "PENDING",
+      "message": {
+        "conversation": "[DevOps Pulse AI] Boletim evidencia 2026-09-17 09:16 - pipeline PULSE-20260917-121306-7999"
+      },
+      "messageType": "conversation",
+      "messageTimestamp": 1789647380,
+      "instanceId": "fe5e9f08-ca74-4f1c-8e43-a3b223337a26",
+      "source": "web"
+    }
+  ]
+}

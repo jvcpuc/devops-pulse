@@ -1,0 +1,26 @@
+{
+    "status":  "ok",
+    "demo_mode":  false,
+    "components":  {
+                       "github":  {
+                                      "ok":  true,
+                                      "detail":  "HTTP 200"
+                                  },
+                       "ollama":  {
+                                      "ok":  true,
+                                      "detail":  "HTTP 200",
+                                      "model_configured":  "llama3.2:1b",
+                                      "models":  [
+                                                     "llama3.2:1b"
+                                                 ]
+                                  },
+                       "kokoro":  {
+                                      "ok":  true,
+                                      "detail":  "/health HTTP 200"
+                                  },
+                       "n8n":  {
+                                   "ok":  true,
+                                   "detail":  "HTTP 200"
+                               }
+                   }
+}

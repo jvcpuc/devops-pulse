@@ -14,6 +14,7 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+node_modules/
 
 # Runtime artifacts
 data/results/*
@@ -21,10 +22,14 @@ data/results/*
 data/*.db
 evidence/*.png
 evidence/*.jpg
+evidence/pdf-preview/
 *.wav
 *.mp3
 logs/
 *.log
+
+# Dados locais/PII que não devem ir para o repo público
+evidence/evolution-instance.json
 
 # OS / editor
 .DS_Store

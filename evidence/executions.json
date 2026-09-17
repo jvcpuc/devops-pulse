@@ -1,0 +1,299 @@
+{
+    "items":  [
+                  {
+                      "id":  17,
+                      "execution_id":  "PULSE-20260917-121306-7999",
+                      "generated_at":  "2026-09-17T12:14:29.268600+00:00",
+                      "repository":  "n8n-io/n8n",
+                      "status":  "success",
+                      "data_source":  "github",
+                      "metrics_json":  "{\"commits\": 57, \"issues_opened\": 13, \"issues_closed\": 4, \"pull_requests_opened\": 59, \"pull_requests_closed\": 32, \"stale_pull_requests\": 13, \"open_issues\": 9, \"workflow_runs\": 100, \"workflow_success\": 47, \"workflow_failure\": 1, \"workflow_success_rate\": 47.0}",
+                      "alerts_json":  "[{\"type\": \"CI_FAILURE\", \"severity\": \"high\", \"message\": \"Foram identificadas 1 execuções de CI/CD com falha no período.\"}, {\"type\": \"LOW_CI_SUCCESS_RATE\", \"severity\": \"high\", \"message\": \"Taxa de sucesso de CI/CD em 47.0%, abaixo do limiar de 80%.\"}, {\"type\": \"STALE_PR\", \"severity\": \"medium\", \"message\": \"13 pull request(s) aberto(s) há mais de 3 dias.\"}, {\"type\": \"HIGH_ISSUE_VOLUME\", \"severity\": \"medium\", \"message\": \"Volume elevado de issues abertas no período: 13 (limiar 10).\"}]",
+                      "timings_json":  "{\"collection_latency_ms\": 5452, \"metrics_latency_ms\": 0, \"llm_latency_ms\": 58471, \"tts_latency_ms\": 18605, \"persistence_latency_ms\": 11, \"total_pipeline_latency_ms\": 82549}",
+                      "summary":  "RESUMO:\nO objetivo principal da análise desses indicadores é identificar áreas de melhoria e identificar riscos operacionais relevantes, priorizando a interpretação de fatos sobre interpretações.\n\nINDICADORES:\n- Produção de 57 commits em um período de 6 meses.\n- Abertura de 13 issues em um período semelhante.\n- Cierre de 4 issues em um período semelhante.\n- Abertura de 59 pull requests em um período semelhante.\n- Cierre de 32 pull requests em um período semelhante.\n- 13 pull requests abertas há mais de 3 dias.\n- Volume elevado de issues abertas em um período.\n\nALERTAS:\n- 1 execução de CI/CD com falha no período.\n- Taxa de sucesso de CI/CD em 47.0%, abaixo do limiar de 80%.\n\nRECOMENDA�?�?ES:\n- Implementar políticas de commit com mais controle para evitar problemas de integração.\n- Priorizar a abertura de pull requests em relação à abertura de issues.\n- Realizar auditorias regulares de pull requests para garantir a qualidade dos código.\n- Melhorar a comunicação com os desenvolvedores para evitar a falta de feedback.\n- Implementar um sistema de gerenciamento de issues para melhorar a eficiência de abertura e resolução de problemas.\n- Monitorar a taxa de sucesso de CI/CD para identificar áreas de melhoria.\n- Realizar auditorias regulares de pull requests para garantir a qualidade dos código.",
+                      "audio_path":  "C:\\PUC\\2_Semestre\\AIFactory\\devops-pulse\\data\\results\\audio\\PULSE-20260917-121306-7999.wav",
+                      "errors_json":  "[]",
+                      "created_at":  "2026-09-17T12:14:29.271209+00:00",
+                      "metrics":  {
+                                      "commits":  57,
+                                      "issues_opened":  13,
+                                      "issues_closed":  4,
+                                      "pull_requests_opened":  59,
+                                      "pull_requests_closed":  32,
+                                      "stale_pull_requests":  13,
+                                      "open_issues":  9,
+                                      "workflow_runs":  100,
+                                      "workflow_success":  47,
+                                      "workflow_failure":  1,
+                                      "workflow_success_rate":  47.0
+                                  },
+                      "alerts":  [
+                                     {
+                                         "type":  "CI_FAILURE",
+                                         "severity":  "high",
+                                         "message":  "Foram identificadas 1 execuções de CI/CD com falha no período."
+                                     },
+                                     {
+                                         "type":  "LOW_CI_SUCCESS_RATE",
+                                         "severity":  "high",
+                                         "message":  "Taxa de sucesso de CI/CD em 47.0%, abaixo do limiar de 80%."
+                                     },
+                                     {
+                                         "type":  "STALE_PR",
+                                         "severity":  "medium",
+                                         "message":  "13 pull request(s) aberto(s) há mais de 3 dias."
+                                     },
+                                     {
+                                         "type":  "HIGH_ISSUE_VOLUME",
+                                         "severity":  "medium",
+                                         "message":  "Volume elevado de issues abertas no período: 13 (limiar 10)."
+                                     }
+                                 ],
+                      "timings":  {
+                                      "collection_latency_ms":  5452,
+                                      "metrics_latency_ms":  0,
+                                      "llm_latency_ms":  58471,
+                                      "tts_latency_ms":  18605,
+                                      "persistence_latency_ms":  11,
+                                      "total_pipeline_latency_ms":  82549
+                                  },
+                      "errors":  [
+
+                                 ]
+                  },
+                  {
+                      "id":  16,
+                      "execution_id":  "PULSE-20260917-120412-28B9",
+                      "generated_at":  "2026-09-17T12:04:12.302976+00:00",
+                      "repository":  "demo/devops-pulse",
+                      "status":  "partial",
+                      "data_source":  "demo",
+                      "metrics_json":  "{\"commits\": 8, \"issues_opened\": 6, \"issues_closed\": 3, \"pull_requests_opened\": 0, \"pull_requests_closed\": 2, \"stale_pull_requests\": 1, \"open_issues\": 3, \"workflow_runs\": 7, \"workflow_success\": 5, \"workflow_failure\": 2, \"workflow_success_rate\": 71.43}",
+                      "alerts_json":  "[{\"type\": \"CI_FAILURE\", \"severity\": \"high\", \"message\": \"Foram identificadas 2 execuções de CI/CD com falha no período.\"}, {\"type\": \"LOW_CI_SUCCESS_RATE\", \"severity\": \"high\", \"message\": \"Taxa de sucesso de CI/CD em 71.4%, abaixo do limiar de 80%.\"}, {\"type\": \"STALE_PR\", \"severity\": \"medium\", \"message\": \"1 pull request(s) aberto(s) há mais de 3 dias.\"}]",
+                      "timings_json":  "{\"collection_latency_ms\": 0, \"metrics_latency_ms\": 0, \"llm_latency_ms\": 0, \"tts_latency_ms\": 0, \"persistence_latency_ms\": 18, \"total_pipeline_latency_ms\": 19}",
+                      "summary":  "",
+                      "audio_path":  "",
+                      "errors_json":  "[\"DEMO_MODE=true �?? dados fictícios, não são evidência de produção.\"]",
+                      "created_at":  "2026-09-17T12:04:12.306979+00:00",
+                      "metrics":  {
+                                      "commits":  8,
+                                      "issues_opened":  6,
+                                      "issues_closed":  3,
+                                      "pull_requests_opened":  0,
+                                      "pull_requests_closed":  2,
+                                      "stale_pull_requests":  1,
+                                      "open_issues":  3,
+                                      "workflow_runs":  7,
+                                      "workflow_success":  5,
+                                      "workflow_failure":  2,
+                                      "workflow_success_rate":  71.43
+                                  },
+                      "alerts":  [
+                                     {
+                                         "type":  "CI_FAILURE",
+                                         "severity":  "high",
+                                         "message":  "Foram identificadas 2 execuções de CI/CD com falha no período."
+                                     },
+                                     {
+                                         "type":  "LOW_CI_SUCCESS_RATE",
+                                         "severity":  "high",
+                                         "message":  "Taxa de sucesso de CI/CD em 71.4%, abaixo do limiar de 80%."
+                                     },
+                                     {
+                                         "type":  "STALE_PR",
+                                         "severity":  "medium",
+                                         "message":  "1 pull request(s) aberto(s) há mais de 3 dias."
+                                     }
+                                 ],
+                      "timings":  {
+                                      "collection_latency_ms":  0,
+                                      "metrics_latency_ms":  0,
+                                      "llm_latency_ms":  0,
+                                      "tts_latency_ms":  0,
+                                      "persistence_latency_ms":  18,
+                                      "total_pipeline_latency_ms":  19
+                                  },
+                      "errors":  [
+                                     "DEMO_MODE=true �?? dados fictícios, não são evidência de produção."
+                                 ]
+                  },
+                  {
+                      "id":  15,
+                      "execution_id":  "PULSE-20260916-183616-6C1A",
+                      "generated_at":  "2026-09-16T18:39:06.436875+00:00",
+                      "repository":  "n8n-io/n8n",
+                      "status":  "success",
+                      "data_source":  "github",
+                      "metrics_json":  "{\"commits\": 65, \"issues_opened\": 15, \"issues_closed\": 6, \"pull_requests_opened\": 47, \"pull_requests_closed\": 28, \"stale_pull_requests\": 14, \"open_issues\": 9, \"workflow_runs\": 100, \"workflow_success\": 24, \"workflow_failure\": 2, \"workflow_success_rate\": 24.0}",
+                      "alerts_json":  "[{\"type\": \"CI_FAILURE\", \"severity\": \"high\", \"message\": \"Foram identificadas 2 execuções de CI/CD com falha no período.\"}, {\"type\": \"LOW_CI_SUCCESS_RATE\", \"severity\": \"high\", \"message\": \"Taxa de sucesso de CI/CD em 24.0%, abaixo do limiar de 80%.\"}, {\"type\": \"STALE_PR\", \"severity\": \"medium\", \"message\": \"14 pull request(s) aberto(s) há mais de 3 dias.\"}, {\"type\": \"HIGH_ISSUE_VOLUME\", \"severity\": \"medium\", \"message\": \"Volume elevado de issues abertas no período: 15 (limiar 10).\"}]",
+                      "timings_json":  "{\"collection_latency_ms\": 27697, \"metrics_latency_ms\": 0, \"llm_latency_ms\": 57718, \"tts_latency_ms\": 84343, \"persistence_latency_ms\": 19, \"total_pipeline_latency_ms\": 170006}",
+                      "summary":  "RESUMO:\nO objetivo principal da análise desses indicadores é identificar áreas de melhoria e identificar riscos operacionais relevantes. Os dados fornecidos mostram uma boa performance em termos de workflow, com uma taxa de sucesso de CI/CD de 24,0% e um número de pull requests abertos de 47. No entanto, há algumas áreas de melhoria que precisam ser abordadas, como a alta taxa de issues abertas (15) e a falta de alta taxa de sucesso de CI/CD (24,0%).\n\nALERTAS:\n- Falta de alta taxa de sucesso de CI/CD (24,0%)\n- Volume elevado de issues abertas no período (15)\n\nRECOMENDA�?�?ES:\n- Implementar políticas de prazos mais flexíveis para pull requests abertos para reduzir a taxa de abertura.\n- Implementar ferramentas de monitoramento de workflow para identificar pull requests abertos há mais de 3 dias.\n- Reduzir a taxa de issues abertas para atingir o limiar de 10.\n\nLIMITA�?�?ES:\n- O objetivo principal da análise é identificar áreas de melhoria e riscos operacionais relevantes, não inventar incidentes ou causas.",
+                      "audio_path":  "C:\\PUC\\2_Semestre\\AIFactory\\devops-pulse\\data\\results\\audio\\PULSE-20260916-183616-6C1A.wav",
+                      "errors_json":  "[]",
+                      "created_at":  "2026-09-16T18:39:06.441870+00:00",
+                      "metrics":  {
+                                      "commits":  65,
+                                      "issues_opened":  15,
+                                      "issues_closed":  6,
+                                      "pull_requests_opened":  47,
+                                      "pull_requests_closed":  28,
+                                      "stale_pull_requests":  14,
+                                      "open_issues":  9,
+                                      "workflow_runs":  100,
+                                      "workflow_success":  24,
+                                      "workflow_failure":  2,
+                                      "workflow_success_rate":  24.0
+                                  },
+                      "alerts":  [
+                                     {
+                                         "type":  "CI_FAILURE",
+                                         "severity":  "high",
+                                         "message":  "Foram identificadas 2 execuções de CI/CD com falha no período."
+                                     },
+                                     {
+                                         "type":  "LOW_CI_SUCCESS_RATE",
+                                         "severity":  "high",
+                                         "message":  "Taxa de sucesso de CI/CD em 24.0%, abaixo do limiar de 80%."
+                                     },
+                                     {
+                                         "type":  "STALE_PR",
+                                         "severity":  "medium",
+                                         "message":  "14 pull request(s) aberto(s) há mais de 3 dias."
+                                     },
+                                     {
+                                         "type":  "HIGH_ISSUE_VOLUME",
+                                         "severity":  "medium",
+                                         "message":  "Volume elevado de issues abertas no período: 15 (limiar 10)."
+                                     }
+                                 ],
+                      "timings":  {
+                                      "collection_latency_ms":  27697,
+                                      "metrics_latency_ms":  0,
+                                      "llm_latency_ms":  57718,
+                                      "tts_latency_ms":  84343,
+                                      "persistence_latency_ms":  19,
+                                      "total_pipeline_latency_ms":  170006
+                                  },
+                      "errors":  [
+
+                                 ]
+                  },
+                  {
+                      "id":  14,
+                      "execution_id":  "PULSE-20260916-183530-AA00",
+                      "generated_at":  "2026-09-16T18:35:36.094311+00:00",
+                      "repository":  "n8n-io/n8n",
+                      "status":  "success",
+                      "data_source":  "github",
+                      "metrics_json":  "{\"commits\": 65, \"issues_opened\": 15, \"issues_closed\": 6, \"pull_requests_opened\": 47, \"pull_requests_closed\": 28, \"stale_pull_requests\": 14, \"open_issues\": 9, \"workflow_runs\": 100, \"workflow_success\": 24, \"workflow_failure\": 2, \"workflow_success_rate\": 24.0}",
+                      "alerts_json":  "[{\"type\": \"CI_FAILURE\", \"severity\": \"high\", \"message\": \"Foram identificadas 2 execuções de CI/CD com falha no período.\"}, {\"type\": \"LOW_CI_SUCCESS_RATE\", \"severity\": \"high\", \"message\": \"Taxa de sucesso de CI/CD em 24.0%, abaixo do limiar de 80%.\"}, {\"type\": \"STALE_PR\", \"severity\": \"medium\", \"message\": \"14 pull request(s) aberto(s) há mais de 3 dias.\"}, {\"type\": \"HIGH_ISSUE_VOLUME\", \"severity\": \"medium\", \"message\": \"Volume elevado de issues abertas no período: 15 (limiar 10).\"}]",
+                      "timings_json":  "{\"collection_latency_ms\": 6043, \"metrics_latency_ms\": 0, \"llm_latency_ms\": 0, \"tts_latency_ms\": 0, \"persistence_latency_ms\": 16, \"total_pipeline_latency_ms\": 6062}",
+                      "summary":  "",
+                      "audio_path":  "",
+                      "errors_json":  "[]",
+                      "created_at":  "2026-09-16T18:35:36.099314+00:00",
+                      "metrics":  {
+                                      "commits":  65,
+                                      "issues_opened":  15,
+                                      "issues_closed":  6,
+                                      "pull_requests_opened":  47,
+                                      "pull_requests_closed":  28,
+                                      "stale_pull_requests":  14,
+                                      "open_issues":  9,
+                                      "workflow_runs":  100,
+                                      "workflow_success":  24,
+                                      "workflow_failure":  2,
+                                      "workflow_success_rate":  24.0
+                                  },
+                      "alerts":  [
+                                     {
+                                         "type":  "CI_FAILURE",
+                                         "severity":  "high",
+                                         "message":  "Foram identificadas 2 execuções de CI/CD com falha no período."
+                                     },
+                                     {
+                                         "type":  "LOW_CI_SUCCESS_RATE",
+                                         "severity":  "high",
+                                         "message":  "Taxa de sucesso de CI/CD em 24.0%, abaixo do limiar de 80%."
+                                     },
+                                     {
+                                         "type":  "STALE_PR",
+                                         "severity":  "medium",
+                                         "message":  "14 pull request(s) aberto(s) há mais de 3 dias."
+                                     },
+                                     {
+                                         "type":  "HIGH_ISSUE_VOLUME",
+                                         "severity":  "medium",
+                                         "message":  "Volume elevado de issues abertas no período: 15 (limiar 10)."
+                                     }
+                                 ],
+                      "timings":  {
+                                      "collection_latency_ms":  6043,
+                                      "metrics_latency_ms":  0,
+                                      "llm_latency_ms":  0,
+                                      "tts_latency_ms":  0,
+                                      "persistence_latency_ms":  16,
+                                      "total_pipeline_latency_ms":  6062
+                                  },
+                      "errors":  [
+
+                                 ]
+                  },
+                  {
+                      "id":  13,
+                      "execution_id":  "PULSE-20260916-144418-4068",
+                      "generated_at":  "2026-09-16T14:44:18.042856+00:00",
+                      "repository":  "demo/devops-pulse",
+                      "status":  "partial",
+                      "data_source":  "demo",
+                      "metrics_json":  "{\"commits\": 8, \"issues_opened\": 6, \"issues_closed\": 3, \"pull_requests_opened\": 0, \"pull_requests_closed\": 2, \"stale_pull_requests\": 1, \"open_issues\": 3, \"workflow_runs\": 7, \"workflow_success\": 5, \"workflow_failure\": 2, \"workflow_success_rate\": 71.43}",
+                      "alerts_json":  "[{\"type\": \"CI_FAILURE\", \"severity\": \"high\", \"message\": \"Foram identificadas 2 execuções de CI/CD com falha no período.\"}, {\"type\": \"LOW_CI_SUCCESS_RATE\", \"severity\": \"high\", \"message\": \"Taxa de sucesso de CI/CD em 71.4%, abaixo do limiar de 80%.\"}, {\"type\": \"STALE_PR\", \"severity\": \"medium\", \"message\": \"1 pull request(s) aberto(s) há mais de 3 dias.\"}]",
+                      "timings_json":  "{\"collection_latency_ms\": 0, \"metrics_latency_ms\": 0, \"llm_latency_ms\": 0, \"tts_latency_ms\": 0, \"persistence_latency_ms\": 0, \"total_pipeline_latency_ms\": 0}",
+                      "summary":  "",
+                      "audio_path":  "",
+                      "errors_json":  "[\"DEMO_MODE=true �?? dados fictícios, não são evidência de produção.\"]",
+                      "created_at":  "2026-09-16T14:44:18.045855+00:00",
+                      "metrics":  {
+                                      "commits":  8,
+                                      "issues_opened":  6,
+                                      "issues_closed":  3,
+                                      "pull_requests_opened":  0,
+                                      "pull_requests_closed":  2,
+                                      "stale_pull_requests":  1,
+                                      "open_issues":  3,
+                                      "workflow_runs":  7,
+                                      "workflow_success":  5,
+                                      "workflow_failure":  2,
+                                      "workflow_success_rate":  71.43
+                                  },
+                      "alerts":  [
+                                     {
+                                         "type":  "CI_FAILURE",
+                                         "severity":  "high",
+                                         "message":  "Foram identificadas 2 execuções de CI/CD com falha no período."
+                                     },
+                                     {
+                                         "type":  "LOW_CI_SUCCESS_RATE",
+                                         "severity":  "high",
+                                         "message":  "Taxa de sucesso de CI/CD em 71.4%, abaixo do limiar de 80%."
+                                     },
+                                     {
+                                         "type":  "STALE_PR",
+                                         "severity":  "medium",
+                                         "message":  "1 pull request(s) aberto(s) há mais de 3 dias."
+                                     }
+                                 ],
+                      "timings":  {
+                                      "collection_latency_ms":  0,
+                                      "metrics_latency_ms":  0,
+                                      "llm_latency_ms":  0,
+                                      "tts_latency_ms":  0,
+                                      "persistence_latency_ms":  0,
+                                      "total_pipeline_latency_ms":  0
+                                  },
+                      "errors":  [
+                                     "DEMO_MODE=true �?? dados fictícios, não são evidência de produção."
+                                 ]
+                  }
+              ]
+}
