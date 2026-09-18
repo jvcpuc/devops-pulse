@@ -29,5 +29,8 @@ FUNCIONAR → MEDIR → DOCUMENTAR → EXPLICAR
 - Testes: `tests/`
 - n8n: `n8n/`
 - Ética: `ETHICS-LGPD.md`
-- Performance/ROI: `PERFORMANCE.md`
-- Demo/vídeo: `PRESENTATION.md`
+- Performance/ROI/melhorias: `PERFORMANCE.md`
+- Etapa 3 (mapa + storytelling): `ETAPA3.md`
+- Vídeo/roteiro: `video/ROTEIRO-VIDEO.md` · `video/DevOps-Pulse-Etapa3.mp4`
+- Apresentação/PDF: `APRESENTACAO-DevOps-Pulse-AI.pdf`
+

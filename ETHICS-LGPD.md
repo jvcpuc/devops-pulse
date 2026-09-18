@@ -1,66 +1,74 @@
 # LGPD e IA responsável — DevOps Pulse AI
 
-## 1. Minimização
+> Documento de **impacto ético, legal e social** (Etapa 3 · ID 3.2).
+> Aplicado ao contexto: squad de 6 pessoas (5 devs + TL + PO) usando GitHub operacional.
 
-O sistema coleta apenas metadados operacionais de repositório:
+## 1. Enquadramento LGPD (Lei 13.709/2018)
 
-- contagens e timestamps de commits;
-- número/título/state de issues e PRs;
-- status/conclusão de workflow runs.
+| Princípio (art. 6º) | Como o DevOps Pulse aplica |
+|---------------------|----------------------------|
+| **Finalidade** | Boletim operacional para gestão de desenvolvimento — sem uso secundário |
+| **Adequação** | Dados só de repositório (commits/PRs/issues/CI), coerentes com a finalidade |
+| **Necessidade / minimização** | Contagens e metadados; **não** persiste diffs, corpos de issues ou autores |
+| **Transparência** | `data_source` (github/demo), `execution_id`, logs e `ETHICS-LGPD.md` |
+| **Segurança** | Tokens em `.env`/`pulse.env` (gitignored); sem secrets em logs/repo |
+| **Prevenção** | Timeouts, retry, fallbacks; demo rotulado para não “parecer produção” |
+| **Não discriminação** | IA não avalia pessoas — só indicadores agregados do time/repo |
+| **Responsabilização** | Evidências, docs e rastreio por `execution_id` |
 
-**Não coletamos** corpos de commits, diffs, conteúdo de issues, e-mails de terceiros além do necessário para notificação configurada pelo operador.
+**Base legal acadêmica:** execução de projeto de aprendizagem com dados públicos de repositório e operação local; sem compartilhar PII com terceiros.
 
-## 2. Finalidade
+**Dados pessoais:** usernames da API do GitHub **não** são gravados no SQLite por padrão. O print do WhatsApp na apresentação tem conversas pessoais **desfocadas**; o grupo de destino é o canal operacional do projeto.
 
-Finalidade única: gerar **boletim operacional** para apoio à gestão de desenvolvimento.
+## 2. IA responsável — princípios e mecanismos
 
-## 3. Transparência
+| Risco | Mecanismo no código/produto |
+|-------|-----------------------------|
+| Alucinação do LLM | Prompt proíbe inventar incidentes/causas/pessoas; fonte primária é a API |
+| Confundir fato × opinião | `metrics` no JSON ≠ `summary` do Ollama |
+| Falso “número mágico” | Se LLM falha, fallback **rotulado** `LLM_ERROR` / texto técnico |
+| Caixa-preta | Timings por estágio + `execution_id` em logs e SQLite |
+| Automação sem supervisão | Resumo é **apoio**; decisão crítica (ex.: “quem errou”) exige humano |
+| Vazamento para cloud | Ollama e Kokoro **locais** — métricas não saem da máquina |
 
-| Item | Prática |
-|------|---------|
-| Fonte | GitHub API (ou demo rotulado) |
-| Processamento | Microsserviço local Python |
-| Interpretação | Ollama (LLM local) — opcional |
-| Áudio | Kokoro (local) — opcional |
-| Armazenamento | SQLite local (`data/results/`) |
-| Destinatários | Operador via API; e-mail/WhatsApp configurados explicitamente |
+## 3. Impactos éticos, legais e sociais
 
-## 4. Segurança
+### Positivos
+- **Tempo do TL** (~8,5 h/mês) liberado para mentoria e revisão, não para “caçar” status.
+- **Menos assimetria:** PO e time recebem o mesmo boletim (transparência operacional).
+- **Detecção de risco de CI** reduz retrabalho coletivo.
+- **Privacidade por design:** stack local em vez de SaaS de analytics de engenharia.
 
-- Credenciais **apenas** em `.env` (não versionado);
-- `.gitignore` cobre `.env`, áudios e resultados;
-- Tokens não entram em logs estruturados (não são logados);
-- Integrações usam timeout e tratamento de erro.
+### Riscos e tensões
+| Risco social/ético | Descrição | Mitigação proposta |
+|--------------------|-----------|---------------------|
+| **Vigilância de produtividade** | Indicadores de commits/PRs podem ser usados para “cobrar” dev | Uso **agregado do repo**, não ranking individual; comunicação clara do PO/TL |
+| **Pressão por volume** | Foco só em “nº de commits” distorce qualidade | Alertas de CI/stale PR; complementar com revisão humana |
+| **Exclusão de contexto** | Números sem contexto culpabilizam quem estava em suporte/férias | Boletim + daily falada; não automatizar punição |
+| **Dependência de WhatsApp pessoal** | Mensagem no celular mistura vida/trabalho | Preferir **grupo do projeto**; horário comercial; opt-out |
+| **Dados de terceiros no print** | Conversas pessoais podem aparecer em captura | Blurred na evidência; não versionar PNG com PII (gitignore) |
+| **Alucinação em decisão** | LLM pode “inventar” causa de falha | Prompt restrito + supervisão + métricas como fonte única |
 
-## 5. IA responsável
+### Deveres do operador (checklist)
+1. Explicar ao time **o que é medido** e **o que não é**.
+2. Não usar o boletim como avaliação de desempenho individual.
+3. Manter tokens fora do Git; revogar se vazar.
+4. Apagar `pulse.db`/áudios ao encerrar o projeto se não houver retenção justificada.
+5. Registrar mudanças de finalidade (ex.: se passar a monitorar outro time).
 
-| Princípio | Implementação |
-|-----------|---------------|
-| LLM não é fonte primária | Dados vêm da API + `metrics.py` |
-| Anti-alucinação | Prompt proíbe inventar incidentes/causas/pessoas |
-| Separação fato × interpretação | JSON de métricas separado do `summary` |
-| Fallback honesto | Se Ollama falha, texto técnico rotulado `NÃO foi produzido por LLM` |
-| Rastreabilidade | `execution_id` em todos os estágios |
-| Supervisão humana | Resumo é apoio; decisões críticas exigem revisão |
+## 4. Limitações declaradas
 
-## 6. Dados pessoais
+- `DEMO_MODE=true` **não** é evidência de produção — sempre citar `data_source`.
+- Premissa de 25 min no manual **não** foi cronometrada em campo pela equipe (marcada como premissa).
+- Rate limit do GitHub e latência local variam conforme rede/máquina.
+- WhatsApp depende de instância Evolution e opt-in do destinatário.
 
-Mesmo com API pública, usernames/avatars **não são persistidos** no SQLite por padrão — apenas contagens e números de issues/PRs.
+## 5. Conclusão ética (para o vídeo)
 
-Se no futuro for necessário identificar autores:
+> Automatizar o boletim **não** substitui julgamento humano: reduz consolidação manual, 
+> preserva privacidade com IA local e **exige** uso responsável dos indicadores — 
+> agregados, transparentes e nunca como arma de cobrança individual.
 
-1. justificar a finalidade;
-2. preferir agregação/anonimização;
-3. documentar retenção e descarte.
+---
 
-## 7. Retenção
-
-- SQLite local: controlada pelo operador (pode apagar `data/results/pulse.db`);
-- Áudios: podem ser removidos após a apresentação;
-- Logs: `logs/app.log` — sem segredos.
-
-## 8. Limitações declaradas
-
-- `DEMO_MODE=true` usa dados fictícios;
-- LLM local pode alucinar se o prompt for descuidado — o código fixa um prompt restritivo;
-- WhatsApp/e-mail dependem de credenciais do operador e de opt-in do destinatário.
+Referências de produto: `PERFORMANCE.md` · `docs/requisitos.md` (RF12) · `ARCHITECTURE.md`.
