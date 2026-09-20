@@ -2,15 +2,15 @@
   "key": {
     "remoteJid": "120363412036540372@g.us",
     "fromMe": true,
-    "id": "3EB09677888D6A6F771264"
+    "id": "3EB0D1CF7950CA24789AE8"
   },
   "pushName": "Você",
   "status": "PENDING",
   "message": {
-    "conversation": "[DevOps Pulse AI] Boletim - PULSE-20260917-124330-A359\n\nRepo: n8n-io/n8n\nFonte: github | Status: success\n\nIndicadores (24h):\n. Commits: 56\n. PRs abertos: 55 | fechados: 34\n. Issues abertas: 9\n. CI success rate: 63.0%\n. Latência coleta: 6522 ms\n\nAlertas:\n• [high] Foram identificadas 1 execuções de CI/CD com falha no período.\n• [high] Taxa de sucesso de CI/CD em 63.0%, abaixo do limiar de 80%.\n• [medium] 14 pull request(s) aberto(s) há mais de 3 dias.\n• [medium] Volume elevado de issues abertas no período: 13 (limiar 10).\n\nStress test (10/25/50 req): 100% sucesso • p95 ~6,6s\n• Pipeline: GitHub → metrics → alerts → n8n"
+    "conversation": "[DevOps Pulse AI] Boletim - PULSE-20260920-201719-5A27\n\nRepo: n8n-io/n8n\nFonte: github | Status: success\n\nIndicadores (24h):\n. Commits: 2\n. PRs abertos: 8 | fechados: 5\n. Issues abertas: 7\n. CI success rate: 16.0%\n. Latência coleta: 5086 ms\n\nAlertas:\n• [high] Foram identificadas 2 execuções de CI/CD com falha no período.\n• [high] Taxa de sucesso de CI/CD em 16.0%, abaixo do limiar de 80%.\n• [medium] 44 pull request(s) aberto(s) há mais de 3 dias.\n\nStress test (10/25/50 req): 100% sucesso • p95 ~6,6s\n• Pipeline: GitHub → metrics → alerts → n8n"
   },
   "messageType": "conversation",
-  "messageTimestamp": 1789649017,
+  "messageTimestamp": 1789935446,
   "instanceId": "fe5e9f08-ca74-4f1c-8e43-a3b223337a26",
   "source": "web"
 }

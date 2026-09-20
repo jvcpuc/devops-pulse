@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Gera vídeo da Etapa 3: slides do PDF + TTS pt-BR (SAPI Windows)."""
+"""Vídeo Etapa 3 — slides PDF + Edge TTS pt-BR Antonio (voz masculina neural)."""
 from __future__ import annotations
 
 import subprocess
@@ -11,6 +11,9 @@ PDF = ROOT / "APRESENTACAO-DevOps-Pulse-AI.pdf"
 PREVIEW = ROOT / "evidence" / "pdf-preview"
 OUTDIR = ROOT / "video"
 OUTDIR.mkdir(exist_ok=True)
+PY = str(ROOT / ".venv" / "Scripts" / "python.exe")
+VOICE = "pt-BR-AntonioNeural"
+RATE = "-8%"  # um pouco mais lento = dicção técnica mais clara
 
 SLIDES = [
     (1, "01-capitulo-problema"),
@@ -25,112 +28,117 @@ SLIDES = [
     (16, "10-aprendizagem"),
 ]
 
-# Narração alvo ~6 min (faixa pedida: 5 a 8 minutos).
-SCRIPT = [
-    (
-        "01-capitulo-problema",
+# Termos técnicos escritos para pronúncia pt-BR convincente:
+# n8n = ene-oito-ene · GitHub · Ollama · Kokoro · SQLite = sequelite
+# pull requests = pul-riquéstes · LGPD · API · CI = integração contínua
+SCRIPT = {
+    "01-capitulo-problema": (
         "DevOps Pulse AI. Entrega final da AI Factory: validação, storytelling e impacto ético. "
-        "Commits, pull requests, issues e CI ficam espalhados no GitHub. "
-        "No contexto analisado, a equipe tem seis pessoas: cinco devs, um tech lead e um PO. "
-        "O tech lead gasta cerca de vinte e cinco minutos por dia só para consolidar o boletim operacional.",
+        "Commits, pull-riquéstes, issues e integração contínua ficam espalhados no Guit-Hub. "
+        "O time tem seis pessoas: cinco desenvolvedores, um tech lead e um product owner. "
+        "O tech lead gasta cerca de vinte e cinco minutos por dia só para consolidar o boletim."
     ),
-    (
-        "02-diagnostico",
-        "O diagnóstico documentou o processo manual: abrir o repositório, filtrar commits de 24 horas, "
-        "listar PRs parados, checar CI e issues, redigir resumo e enviar no chat. "
-        "O TL vira ponto único de consolidação; o PO tem visão reativa; os devs dependem de alguém notar o risco. "
-        "A oportunidade é formalizar input, process e output com API, IA local e entrega multicanal.",
+    "02-diagnostico": (
+        "No diagnóstico, o processo manual era este: abrir o repositório, filtrar commits das últimas "
+        "vinte e quatro horas, listar pull-riquéstes parados, checar integração contínua e issues, "
+        "redigir o resumo e enviar no chat. O tech lead virava ponto único de consolidação. "
+        "O product owner tinha visão reativa. "
+        "A oportunidade: automatizar o ciclo input, process e output com API, inteligência local "
+        "e entrega multicanal."
     ),
-    (
-        "03-ambiente-docker",
-        "Ambiente validado localmente: Docker com n8n, Kokoro, Evolution API e Postgres. "
-        "Ollama com llama3.2. O health do microsserviço mostra quatro componentes no ar "
-        "e demo mode desligado — dados reais do repositório n8n-io barra n8n. "
-        "Vinte e um testes automatizados passando.",
+    "03-ambiente-docker": (
+        "Ambiente validado na máquina local. No Dóquer rodam N-oito-N, Kokóro, "
+        "Evolution API e Postgres. O modelo de linguagem local é o Olláma, com o llama três ponto dois. "
+        "O health do microsserviço Python mostra quatro componentes no ar: Guit-Hub, Olláma, Kokóro "
+        "e N-oito-N. Vinte e um testes automatizados passando. "
+        "Modo demo desligado: os dados vêm do repositório real ene oito ene iô barra ene oito ene."
     ),
-    (
-        "04-n8n-etapa2",
-        "A orquestração fica no n8n: a Etapa um dispara o pipeline; a Etapa dois agenda, valida execution_id "
-        "e distribui para WhatsApp, Telegram e e-mail, com continuidade se um canal falhar. "
-        "Python calcula; a IA local interpreta; o n8n coordena a entrega.",
+    "04-n8n-etapa2": (
+        "A orquestração fica no N-oito-N. A etapa um dispara o pipeline do microsserviço. "
+        "A etapa dois agenda a execução, valida o identificador de execução e distribui o boletim "
+        "para WhatsApp, Telegram e e-mail. Se um canal falhar, o fluxo continua "
+        "e a entrega não cai por inteiro. O Python calcula; a inteligência local interpreta; "
+        "o N-oito-N coordena a entrega."
     ),
-    (
-        "05-prototipo-api",
-        "O protótipo consome a API do GitHub, calcula métricas e alertas, gera resumo com Ollama "
-        "e áudio com Kokoro, gravando tudo em SQLite. "
-        "Execução de referência PULSE-20260917-121306-7999: status success, fonte github, "
-        "coleta 5,5 s, LLM 58,5 s, TTS 18,6 s, total 82,5 segundos. "
-        "O LLM interpreta indicadores já calculados — não é fonte primária.",
+    "05-prototipo-api": (
+        "O protótipo consome a API pública do Guit-Hub. Calcula métricas e alertas, "
+        "gera resumo com Olláma e síntese de voz com Kokóro, e grava tudo no Sequelite. "
+        "Execução de referência: status sucesso, fonte Guit-Hub. "
+        "Coleta em cinco vírgula cinco segundos; modelo de linguagem em cinquenta e oito vírgula cinco; "
+        "voz em dezoito vírgula seis. Total: oitenta e dois segundos e meio. "
+        "Regra de ouro: o modelo interpreta indicadores já calculados. Ele não é a fonte primária."
     ),
-    (
-        "06-sqlite-grid",
-        "Cada execução entra no SQLite com execution_id rastreável. "
-        "Criamos um grid HTML para a apresentação, sem abrir SGDB. "
-        "O badge da fonte distingue github de demo: prova de pipeline não vira métrica de produção.",
+    "06-sqlite-grid": (
+        "Cada execução entra no Sequelite com um identificador rastreável. "
+        "Para a apresentação, criamos um grid em HTML, sem abrir gerenciador de banco. "
+        "Cada card mostra status, métricas e latência. "
+        "O ponto central é o selo da fonte dos dados: Guit-Hub quando a coleta veio da API real, "
+        "demo quando o pipeline foi testado sem token. "
+        "Prova de funcionamento não se mistura com métrica de produção."
     ),
-    (
-        "07-dashboard",
-        "O dashboard conta a história dos dados: cards de commits, PRs, issues e CI, "
-        "alertas de severidade, latência por etapa e antes versus depois. "
-        "De 25 minutos manuais para cerca de 1,4 minuto de pipeline — aproximadamente 94% menos tempo, "
-        "equivalente a 8,5 horas por mês liberadas do TL, segundo as premissas documentadas.",
+    "07-dashboard": (
+        "O dashboard conta a história dos dados. Cards de commits, pull-riquéstes abertos, issues, "
+        "execuções de integração contínua e taxa de sucesso. Alertas com severidade. Latência por etapa. "
+        "E o antes e depois em números: de vinte e cinco minutos manuais para cerca de "
+        "um minuto e quarenta de pipeline. Isso é aproximadamente noventa e quatro por cento "
+        "menos tempo no ciclo. Com as premissas documentadas, oito horas e meia por mês "
+        "liberadas do tech lead para mentoria e revisão — não para consolidação manual. "
+        "Esse é o valor de negócio traduzido a partir do resultado técnico."
     ),
-    (
-        "08-whatsapp",
-        "Entrega multicanal comprovada: o boletim completo chegou ao grupo DevOps Pulse AI "
-        "via Evolution API, com indicadores, alertas, stress test e pipeline. "
-        "A instância devops-pulse está com connection state open, WhatsApp pareado.",
+    "08-whatsapp": (
+        "Entrega multicanal comprovada na prática. O boletim completo foi enviado ao grupo "
+        "DevOps Pulse AI no WhatsApp, via Evolution API. "
+        "Chegaram repositório, fonte, status, indicadores de vinte e quatro horas, "
+        "alertas de integração contínua, pull-riquéstes parados, resultado do stress test e o pipeline. "
+        "A instância devops-pulse está aberta, com WhatsApp pareado e pronto para envio."
     ),
-    (
-        "09-performance-etica",
-        "Performance medida: stress 10/25/50 com 100% de sucesso; p95 em torno de 7 segundos. "
-        "Gargalos: GitHub API, Ollama e Kokoro. Melhorias priorizadas: cache da coleta, "
-        "LLM assíncrono, TTS estável e Sheets no n8n. "
-        "LGPD e IA responsável: minimização, tokens fora do Git, LLM local, fallback honesto e supervisão humana. "
-        "Impacto social assumido: métrica de repositório não vira ranking de pessoa.",
+    "09-performance-etica": (
+        "Performance medida, sem achismo. Stress test de dez, vinte e cinquenta requisições: "
+        "cem por cento de sucesso; p noventa e cinco em torno de sete segundos. "
+        "Gargalos: API do Guit-Hub, Olláma e Kokóro. "
+        "Melhorias priorizadas: cache da coleta, processamento assíncrono do resumo e da voz, "
+        "Kokóro aquecido e histórico em planilha para o product owner. "
+        "No plano ético e legal, LGPD aplicada de verdade: finalidade, minimização, transparência "
+        "e segurança, com tokens fora do repositório. "
+        "Inteligência artificial responsável: modelo local, prompt que proíbe inventar incidentes, "
+        "fallback honesto e supervisão humana. "
+        "Impacto social assumido em voz alta: métrica de repositório não pode virar ranking de pessoa. "
+        "O valor é tempo e clareza para o time — não vigilância individual."
     ),
-    (
-        "10-aprendizagem",
-        "Aprendizagem-chave: traduzir resultado técnico em valor de negócio com responsabilidade social. "
-        "Sistemas conectados por API, indicadores acionáveis, automatização de relatórios e limites éticos claros. "
-        "Próximos passos: cache, paralelismo, Sheets e baseline de anomalias. "
-        "DevOps Pulse AI — boletim inteligente de operações com evidências reais.",
+    "10-aprendizagem": (
+        "Aprendizagem-chave da etapa final: traduzir resultado técnico em valor de negócio "
+        "com responsabilidade social. Sistemas conectados por API, indicadores acionáveis, "
+        "relatórios automatizados e limites éticos claros. "
+        "Próximos passos: cache da coleta no Guit-Hub, processamento em paralelo, "
+        "histórico em planilha e baseline de anomalias para reduzir alertas falsos. "
+        "DevOps Pulse AI. Boletim inteligente de operações, com evidências reais "
+        "e consciência dos impactos da inteligência artificial no trabalho de equipes de software."
     ),
-]
+}
 
 
-def say(text: str, wav: Path) -> None:
-    """Portuguese TTS via Windows SAPI."""
-    ps = f"""
-$ErrorActionPreference = 'Stop'
-Add-Type -AssemblyName System.Speech
-$s = New-Object System.Speech.Synthesis.SpeechSynthesizer
-$pt = $s.GetInstalledVoices() | Where-Object {{ $_.VoiceInfo.Culture.Name -like 'pt*' }} | Select-Object -First 1
-if ($pt) {{ $s.SelectVoice($pt.VoiceInfo.Name) }}
-$s.Rate = 0
-$s.SetOutputToWaveFile('{wav}')
-$s.Speak('{text.replace("'", "''")}')
-$s.Dispose()
-"""
-    r = subprocess.run(
-        ["powershell", "-NoProfile", "-Command", ps],
-        capture_output=True,
-        text=True,
-    )
-    if r.returncode != 0 or not wav.exists() or wav.stat().st_size < 1000:
-        print("SAPI failed:", (r.stderr or r.stdout or "")[-500:])
-        raise RuntimeError(f"TTS failed for {wav.name}")
+def edge_tts(text: str, mp3: Path) -> None:
+    cmd = [
+        PY, "-m", "edge_tts",
+        "--voice", VOICE,
+        "--rate=-8%",
+        "--text", text,
+        "--write-media", str(mp3),
+    ]
+    r = subprocess.run(cmd, capture_output=True, text=True)
+    if r.returncode != 0 or not mp3.exists() or mp3.stat().st_size < 2000:
+        print(r.stderr[-600:] if r.stderr else r.stdout[-600:])
+        raise RuntimeError("edge-tts failed " + mp3.name)
 
 
 def ensure_slides() -> None:
     PREVIEW.mkdir(parents=True, exist_ok=True)
-    existing = list(PREVIEW.glob("APRESENTACAO-DevOps-Pulse-AI_*.png"))
-    if len(existing) < 16:
-        cmd = [
-            sys.executable, "-m", "pypdfium2_cli", "render",
-            str(PDF), "--output", str(PREVIEW), "--format", "png", "--scale", "1.5",
-        ]
-        subprocess.run(cmd, check=True, cwd=str(ROOT))
+    if len(list(PREVIEW.glob("APRESENTACAO-DevOps-Pulse-AI_*.png"))) < 16:
+        subprocess.run(
+            [sys.executable, "-m", "pypdfium2_cli", "render",
+             str(PDF), "--output", str(PREVIEW), "--format", "png", "--scale", "1.5"],
+            check=True, cwd=str(ROOT),
+        )
 
 
 def main() -> None:
@@ -142,13 +150,18 @@ def main() -> None:
         if not png.exists():
             cands = sorted(PREVIEW.glob(f"*_{page:02d}.png"))
             if not cands:
-                print("missing slide page", page)
+                print("missing slide", page)
                 continue
             png = cands[-1]
-        wav = OUTDIR / f"seg-{key}.wav"
-        text = dict(SCRIPT)[key]
+        mp3 = OUTDIR / f"seg-{key}.mp3"
+        wav = OUTDIR / f"seg-{key}-antonio.wav"
         print("TTS", key)
-        say(text, wav)
+        edge_tts(SCRIPT[key], mp3)
+        # convert to wav for stable concat/audio filter
+        subprocess.run(
+            ["ffmpeg", "-y", "-i", str(mp3), "-ar", "44100", "-ac", "2", str(wav)],
+            check=True, capture_output=True,
+        )
         probe = subprocess.run(
             ["ffprobe", "-v", "error", "-show_entries", "format=duration",
              "-of", "default=nw=1:nk=1", str(wav)],
@@ -157,8 +170,8 @@ def main() -> None:
         try:
             dur = float(probe.stdout.strip())
         except Exception:
-            dur = 10.0
-        dur = max(dur + 0.6, 4.0)
+            dur = 20.0
+        dur = max(dur + 0.8, 5.0)
         total += dur
         out_seg = OUTDIR / f"seg-{key}.mp4"
         vf = (
@@ -170,7 +183,7 @@ def main() -> None:
             "-loop", "1", "-framerate", "30", "-i", str(png),
             "-i", str(wav),
             "-c:v", "libx264", "-tune", "stillimage", "-pix_fmt", "yuv420p",
-            "-c:a", "aac", "-b:a", "160k", "-ar", "44100",
+            "-c:a", "aac", "-b:a", "192k", "-ar", "44100",
             "-vf", vf,
             "-t", f"{dur:.2f}",
             "-movflags", "+faststart",
@@ -179,37 +192,26 @@ def main() -> None:
         r = subprocess.run(cmd, capture_output=True, text=True)
         if r.returncode != 0:
             print(r.stderr[-800:])
-            raise RuntimeError("ffmpeg seg failed " + key)
+            raise RuntimeError("ffmpeg fail " + key)
         segments.append(out_seg)
-        print(f"  {key}: {dur:.1f}s -> {out_seg.name}")
+        print(f"  {key}: {dur:.1f}s")
 
-    print(f"total narrado ~ {total/60:.2f} min ({total:.0f}s)")
+    print(f"total ~ {total/60:.2f} min ({total:.0f}s)")
     listfile = OUTDIR / "concat.txt"
-    listfile.write_text(
-        "".join(f"file '{p.as_posix()}'\n" for p in segments),
-        encoding="utf-8",
-    )
+    listfile.write_text("".join(f"file '{p.as_posix()}'\n" for p in segments), encoding="utf-8")
     final = OUTDIR / "DevOps-Pulse-Etapa3.mp4"
-    cmd = [
-        "ffmpeg", "-y", "-f", "concat", "-safe", "0",
-        "-i", str(listfile), "-c", "copy",
-        "-movflags", "+faststart",
-        str(final),
-    ]
-    r = subprocess.run(cmd, capture_output=True, text=True)
-    if r.returncode != 0:
-        cmd = [
-            "ffmpeg", "-y", "-f", "concat", "-safe", "0",
-            "-i", str(listfile),
-            "-c:v", "libx264", "-pix_fmt", "yuv420p",
-            "-c:a", "aac", "-b:a", "160k",
-            "-movflags", "+faststart",
-            str(final),
-        ]
+    for cmd in (
+        ["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", str(listfile),
+         "-c", "copy", "-movflags", "+faststart", str(final)],
+        ["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", str(listfile),
+         "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k",
+         "-movflags", "+faststart", str(final)],
+    ):
         r = subprocess.run(cmd, capture_output=True, text=True)
-        if r.returncode != 0:
-            print(r.stderr[-800:])
-            raise RuntimeError("concat failed")
+        if r.returncode == 0:
+            break
+    else:
+        raise RuntimeError("concat failed")
     probe = subprocess.run(
         ["ffprobe", "-v", "error", "-show_entries", "format=duration",
          "-of", "default=nw=1:nk=1", str(final)],

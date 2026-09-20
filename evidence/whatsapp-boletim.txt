@@ -1,20 +1,19 @@
-[DevOps Pulse AI] Boletim - PULSE-20260917-124330-A359
+[DevOps Pulse AI] Boletim - PULSE-20260920-201719-5A27
 
 Repo: n8n-io/n8n
 Fonte: github | Status: success
 
 Indicadores (24h):
-. Commits: 56
-. PRs abertos: 55 | fechados: 34
-. Issues abertas: 9
-. CI success rate: 63.0%
-. Latência coleta: 6522 ms
+. Commits: 2
+. PRs abertos: 8 | fechados: 5
+. Issues abertas: 7
+. CI success rate: 16.0%
+. Latência coleta: 5086 ms
 
 Alertas:
-• [high] Foram identificadas 1 execuções de CI/CD com falha no período.
-• [high] Taxa de sucesso de CI/CD em 63.0%, abaixo do limiar de 80%.
-• [medium] 14 pull request(s) aberto(s) há mais de 3 dias.
-• [medium] Volume elevado de issues abertas no período: 13 (limiar 10).
+• [high] Foram identificadas 2 execuções de CI/CD com falha no período.
+• [high] Taxa de sucesso de CI/CD em 16.0%, abaixo do limiar de 80%.
+• [medium] 44 pull request(s) aberto(s) há mais de 3 dias.
 
 Stress test (10/25/50 req): 100% sucesso • p95 ~6,6s
 • Pipeline: GitHub → metrics → alerts → n8n

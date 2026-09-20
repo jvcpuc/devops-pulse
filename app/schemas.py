@@ -48,6 +48,7 @@ class StageTimings(BaseModel):
     llm_latency_ms: int = 0
     tts_latency_ms: int = 0
     persistence_latency_ms: int = 0
+    whatsapp_latency_ms: int = 0
     total_pipeline_latency_ms: int = 0
 
 
@@ -63,7 +64,9 @@ class PulseResponse(BaseModel):
     status: Literal["success", "partial", "error"] = "success"
     data_source: Literal["github", "demo"] = "github"
     summary: str | None = None
+    bulletin: str | None = None
     audio_path: str | None = None
+    whatsapp: dict[str, Any] | None = None
     errors: list[str] = Field(default_factory=list)
 
 

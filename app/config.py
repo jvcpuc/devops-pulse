@@ -42,6 +42,11 @@ class Settings(BaseSettings):
     kokoro_voice: str = "pf_dora"
     kokoro_timeout_seconds: float = 60.0
 
+    # Edge TTS (voz neural pt-BR — áudio de apresentação)
+    edge_tts_enabled: bool = True
+    edge_tts_voice: str = "pt-BR-AntonioNeural"
+    edge_tts_rate: str = "-8%"
+
     # n8n
     n8n_base_url: str = "http://localhost:5678"
 
@@ -59,12 +64,16 @@ class Settings(BaseSettings):
     smtp_to: str = ""
     smtp_use_tls: bool = True
 
-    # WhatsApp
+    # WhatsApp / Evolution API
     whatsapp_enabled: bool = False
-    whatsapp_provider: str = "generic"
-    whatsapp_api_url: str = ""
+    whatsapp_provider: str = "evolution"
+    whatsapp_api_url: str = "http://127.0.0.1:8080"
     whatsapp_token: str = ""
     whatsapp_to: str = ""
+    whatsapp_group: str = ""
+    whatsapp_timeout_seconds: float = 20.0
+    evolution_instance: str = "devops-pulse"
+    evolution_api_key: str = ""
 
     # Alert thresholds
     stale_pr_days: int = 3

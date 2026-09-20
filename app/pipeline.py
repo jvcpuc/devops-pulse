@@ -8,6 +8,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from app.alerts import generate_alerts
+from app.bulletin import format_bulletin, format_spoken_bulletin
 from app.config import Settings, get_settings
 from app.demo_data import build_demo_raw
 from app.github_client import GitHubAPIError, GitHubClient
@@ -17,6 +18,7 @@ from app.ollama_client import OllamaClient
 from app.persistence import Persistence
 from app.schemas import Period, PulseResponse, StageTimings
 from app.tts_client import TTSClient
+from app.whatsapp_client import WhatsAppClient
 
 logger = get_logger(__name__)
 
@@ -38,6 +40,7 @@ class PulsePipeline:
         self.ollama = OllamaClient(self.settings)
         self.tts = TTSClient(self.settings)
         self.store = Persistence(self.settings)
+        self.whatsapp = WhatsAppClient(self.settings)
 
     def run(
         self,
@@ -110,10 +113,16 @@ class PulsePipeline:
             unusual_activity_multiplier=self.settings.unusual_activity_multiplier,
         )
 
+        repository = self.settings.repo_full_name or (
+            "demo/devops-pulse" if data_source == "demo" else ""
+        )
+
         summary: str | None = None
         llm_ms = 0
         tts_ms = 0
         audio_path: str | None = None
+        whatsapp_ms = 0
+        whatsapp_meta: dict | None = None
 
         if with_llm:
             log_event(logger, execution_id=execution_id, stage="ollama", status="LLM_STARTED")
@@ -143,21 +152,78 @@ class PulsePipeline:
                     level="WARNING",
                 )
 
-        if with_tts and summary:
+        # Boletim = fonte única de verdade para WhatsApp e TTS (não o texto genérico do LLM)
+        bulletin = format_bulletin(
+            execution_id=execution_id,
+            repository=repository or "—",
+            data_source=data_source,
+            status=status,
+            metrics=metrics,
+            alerts=alerts,
+            collection_latency_ms=collection_ms,
+            summary=summary,
+        )
+        spoken_kokoro = format_spoken_bulletin(
+            execution_id=execution_id,
+            repository=repository or "repositório",
+            data_source=data_source,
+            status=status,
+            metrics=metrics,
+            alerts=alerts,
+            collection_latency_ms=collection_ms,
+            engine="kokoro",
+        )
+        spoken_edge = format_spoken_bulletin(
+            execution_id=execution_id,
+            repository=repository or "repositório",
+            data_source=data_source,
+            status=status,
+            metrics=metrics,
+            alerts=alerts,
+            collection_latency_ms=collection_ms,
+            engine="edge",
+        )
+
+        if with_tts:
             log_event(logger, execution_id=execution_id, stage="tts", status="TTS_STARTED")
             t = time.perf_counter()
-            audio_path, tts_meta = self.tts.synthesize(summary, execution_id)
+            kokoro_path: str | None = None
+            edge_path: str | None = None
+            tts_meta: dict = {"success": False}
+
+            if self.settings.kokoro_enabled:
+                kokoro_path, k_meta = self.tts.synthesize(spoken_kokoro, execution_id)
+                if k_meta.get("success"):
+                    tts_meta = k_meta
+                else:
+                    errors.append(f"TTS_KOKORO_ERROR: {k_meta.get('error', 'desconhecido')}")
+
+            if self.settings.edge_tts_enabled:
+                edge_path, e_meta = self.tts.synthesize_edge(spoken_edge, execution_id)
+                if e_meta.get("success"):
+                    tts_meta = e_meta
+                else:
+                    errors.append(f"TTS_EDGE_ERROR: {e_meta.get('error', 'desconhecido')}")
+
+            # áudio principal da demo: Edge (Antonio) se existir; senão Kokoro
+            audio_path = edge_path or kokoro_path
             tts_ms = _ms(t)
-            if tts_meta.get("success"):
+            if audio_path:
                 log_event(
                     logger,
                     execution_id=execution_id,
                     stage="tts",
                     status="TTS_SUCCESS",
                     duration_ms=tts_ms,
+                    extra={
+                        "audio_path": audio_path,
+                        "kokoro_path": kokoro_path,
+                        "edge_path": edge_path,
+                    },
                 )
             else:
-                errors.append(f"TTS_ERROR: {tts_meta.get('error', 'desconhecido')}")
+                if not any(e.startswith("TTS_") for e in errors):
+                    errors.append("TTS_ERROR: nenhum motor gerou áudio")
                 status = "partial" if status == "success" else status
                 log_event(
                     logger,
@@ -165,14 +231,14 @@ class PulsePipeline:
                     stage="tts",
                     status="TTS_ERROR",
                     duration_ms=tts_ms,
-                    message=str(tts_meta.get("error", "")),
+                    message=str(tts_meta.get("error", "sem áudio")),
                     level="WARNING",
                 )
 
         persistence_ms = 0
         pulse = PulseResponse(
             execution_id=execution_id,
-            repository=self.settings.repo_full_name or ("demo/devops-pulse" if data_source == "demo" else ""),
+            repository=repository,
             period=Period(**{"from": window_start, "to": window_end}),
             metrics=metrics,
             alerts=alerts,
@@ -180,6 +246,7 @@ class PulsePipeline:
             status=status,
             data_source=data_source,  # type: ignore[arg-type]
             summary=summary,
+            bulletin=bulletin,
             audio_path=audio_path,
             errors=errors,
             timings=StageTimings(
@@ -188,6 +255,7 @@ class PulsePipeline:
                 llm_latency_ms=llm_ms,
                 tts_latency_ms=tts_ms,
                 persistence_latency_ms=0,
+                whatsapp_latency_ms=0,
                 total_pipeline_latency_ms=_ms(started),
             ),
         )
@@ -220,6 +288,37 @@ class PulsePipeline:
                     duration_ms=persistence_ms,
                 )
 
+        # WhatsApp automático (mesmo texto do boletim) após gravar no SQLite
+        if self.settings.whatsapp_enabled and bulletin:
+            log_event(logger, execution_id=execution_id, stage="whatsapp", status="WHATSAPP_STARTED")
+            t = time.perf_counter()
+            ok_wa, whatsapp_meta = self.whatsapp.send_text(bulletin)
+            whatsapp_ms = _ms(t)
+            if ok_wa:
+                log_event(
+                    logger,
+                    execution_id=execution_id,
+                    stage="whatsapp",
+                    status="WHATSAPP_SUCCESS",
+                    duration_ms=whatsapp_ms,
+                    extra={"key": whatsapp_meta.get("key"), "to": whatsapp_meta.get("to")},
+                )
+            else:
+                errors.append(f"WHATSAPP_ERROR: {whatsapp_meta.get('error', 'desconhecido')}")
+                status = "partial" if status == "success" else status
+                log_event(
+                    logger,
+                    execution_id=execution_id,
+                    stage="whatsapp",
+                    status="WHATSAPP_ERROR",
+                    duration_ms=whatsapp_ms,
+                    message=str(whatsapp_meta.get("error", "")),
+                    level="WARNING",
+                )
+            pulse.whatsapp = whatsapp_meta
+            pulse.errors = errors
+            pulse.status = status
+
         total_ms = _ms(started)
         pulse.timings = StageTimings(
             collection_latency_ms=collection_ms,
@@ -227,6 +326,7 @@ class PulsePipeline:
             llm_latency_ms=llm_ms,
             tts_latency_ms=tts_ms,
             persistence_latency_ms=persistence_ms,
+            whatsapp_latency_ms=whatsapp_ms,
             total_pipeline_latency_ms=total_ms,
         )
         pulse.status = status
