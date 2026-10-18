@@ -1,14 +1,16 @@
 # Roteiro do vídeo — Etapa 3 (5–8 min)
 
 > Objetivo: dominar técnica → valor de negócio → responsabilidade social.
-> Duração alvo: **~6 min**. Use o PDF `APRESENTACAO-DevOps-Pulse-AI.pdf` ou a demo ao vivo.
+> Duração alvo: **~7 min**. Use o PDF `APRESENTACAO-DevOps-Pulse-AI.pdf` ou a demo ao vivo.
 
 ## Pré (30 s antes)
 
-- API no ar com `demo_mode: false` (`/health`)
-- Abas: health · `/api/pulse` · dashboard · sqlite.html · n8n · WhatsApp grupo
+- API no ar com `demo_mode: false` (`/health`) — iniciada com `.\scripts\start_demo.ps1`
+- Abas: health · `/api/pulse` · dashboard (seção "Demonstração MCP") · sqlite.html · n8n · WhatsApp grupo
+- Cliente MCP configurado e testado (ex.: `claude mcp add devops-pulse --transport http http://127.0.0.1:8000/mcp`)
 - PDF aberto na seção de métricas/ética
 - Áudio já gerado: `data/results/audio/PULSE-20260917-121306-7999.wav`
+- Capturas de contingência: `evidence/14-mcp-dashboard.png` e `evidence/mcp/`
 
 ## Script bloco a bloco
 
@@ -18,12 +20,12 @@
 **Peso da rubrica:** narrativa + objetivo.
 
 ### 0:40–1:20 — Solução e arquitetura
-**Diga:** “Construímos um pipeline de automação com IA local: GitHub API → Python/FastAPI → métricas e alertas → Ollama (resumo) → Kokoro (áudio) → SQLite → n8n → WhatsApp do grupo.”
+**Diga:** “Construímos um pipeline de automação com IA local: GitHub API → Python/FastAPI → métricas e alertas → Ollama (resumo) → Kokoro (áudio) → SQLite → n8n → WhatsApp do grupo. As consultas também são expostas como **ferramentas MCP** para clientes de IA.”
 **Mostre:** diagrama do PDF / `ARCHITECTURE.md`.
 **Aponte:** “O LLM **não** inventa número — só interpreta indicadores já calculados.”
 
 ### 1:20–2:20 — Ambiente validado (ID 2.1 / evidências)
-**Diga:** “Ambiente local comprovado: Ollama llama3.2:1b, Kokoro, n8n e Evolution API no Docker. Testes 21 de 21. Demo mode desligado — dados reais do repositório n8n-io/n8n.”
+**Diga:** “Ambiente local comprovado: Ollama llama3.2:1b, Kokoro, n8n e Evolution API no Docker. Testes 34 de 34 — incluindo o suíte do servidor MCP. Demo mode desligado — dados reais do repositório n8n-io/n8n.”
 **Mostre:** `/health`, Docker Desktop, pytest.
 
 ### 2:20–3:40 — Protótipo e resultado medido (ID 2.2 / métricas)
@@ -31,26 +33,35 @@
 **Mostre:** JSON `/api/pulse`, logs, áudio `.wav`, grid SQLite, WhatsApp com o boletim completo.
 **Número de impacto:** “De 25 minutos manuais para ~1,4 minuto — cerca de 94% menos tempo; ~8,5 horas/mês liberadas do TL.”
 
-### 3:40–4:40 — Storytelling com dados (ID 3.1)
+### 3:40–4:30 — Storytelling com dados (ID 3.1)
 **Diga:** “O dashboard conta a história: cards de commits/PRs/CI, alertas de severidade, latência por etapa e comparação antes × depois. O grid do SQLite mostra a **fonte** de cada execução — badge github vs demo — para não misturar prova de pipeline com métrica de produção.”
 **Mostre:** `dashboard/index.html` e `dashboard/sqlite.html`.
 **Aponte:** 3 alertas do dia (CI baixa, PR stale, issues).
 
-### 4:40–5:30 — Melhorias (análise crítica)
+### 4:30–5:30 — Novidade: MCP (Model Context Protocol)
+**Diga:** “O MCP padroniza a comunicação entre aplicações de IA e ferramentas externas. Aqui o servidor MCP expõe as consultas que já existiam — reaproveitando a mesma função que calcula as métricas, sem duplicar regra de negócio.”
+**Mostre:** a seção **“Demonstração MCP”** no dashboard.
+**Faça:** clique em **Consultar métricas** → mostrar estado “processando” → “concluído” → JSON com o badge de fonte. Depois **Consultar commits**. Troque o owner para `..` para mostrar o **erro compreensível**.
+**Diga:** “Os botões falam o protocolo de verdade — JSON-RPC para `/mcp`. Mas a prova do protocolo é um **cliente MCP real**.”
+**Mostre:** o cliente configurado listando as 5 ferramentas e executando uma consulta; se houver IA, pergunte: “Com base nos dados, quais pontos merecem atenção?”
+**Aponte:** “Repare que o resultado traz `data_source`: quando é demo, o sistema avisa — não apresentamos dado fictício como real.”
+
+### 5:30–6:20 — Melhorias (análise crítica)
 **Diga:** “Os gargalos estão medidos: GitHub API, Ollama e Kokoro. Prioridade de melhoria: cache da coleta (M1), LLM assíncrono (M2), TTS estável (M3), Sheets no n8n para o PO (M5) e baseline de anomalias (M6).”
 **Mostre:** tabela M1–M8 em `PERFORMANCE.md`.
 
-### 5:30–6:20 — Ética, LGPD e valor social (ID 3.2)
+### 6:20–7:10 — Ética, LGPD e valor social (ID 3.2)
 **Diga:** “Impacto ético: minimização de dados, LLM local (nada sai da máquina), tokens fora do Git e demo rotulado. Risco social que assumimos: métrica de commits **não** pode virar ranking de pessoa — o boletim é agregado do repositório e exige supervisão humana. Valor: menos consolidação manual, mais tempo de mentoria e decisão com dados.”
 **Mostre:** `ETHICS-LGPD.md` (princípios LGPD + tabela de riscos/mitigações).
 
-### 6:20–6:40 — Fechamento
-**Diga:** “Aprendizagem-chave: conectar sistemas via API, transformar dados em indicadores acionáveis e traduzir resultado técnico em valor de negócio — com responsabilidade social. Próximos passos: cache, paralelismo e histórico em Sheets.”
+### 7:10–7:40 — Fechamento
+**Diga:** “O projeto hoje tem duas formas complementares de interação: a interface visual e ferramentas MCP que qualquer cliente compatível descobre e usa — sem reescrever a lógica de negócio. Aprendizagem-chave: conectar sistemas via API, transformar dados em indicadores acionáveis e disponibilizar isso para fluxos de IA — com responsabilidade social. Próximos passos: cache, paralelismo e histórico em Sheets.”
 
 ## Checklist de avaliação (autoavaliação)
 
 - [ ] Citou números medidos (latência, 100% stress, 94%, 8,5 h/mês)
 - [ ] Mostrou evidência (print/dashboard/WhatsApp) — não só “falou”
+- [ ] Demonstrou o MCP ao vivo (página + cliente real) e mostrou `data_source`
 - [ ] Nomeou gargalos e ao menos 2 melhorias
 - [ ] Explicou LGPD + 1 risco social + mitigação
 - [ ] Disse que demo ≠ produção quando relevante

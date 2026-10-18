@@ -1,0 +1,44 @@
+{
+  "tool": "get_pull_requests",
+  "status": "success",
+  "repository": "n8n-io/n8n",
+  "data_source": "demo",
+  "queried_at": "2026-10-18T15:39:23.608017+00:00",
+  "period": {
+    "from": "2026-10-11T15:39:23.608017+00:00",
+    "to": "2026-10-18T15:39:23.608017+00:00"
+  },
+  "hours": 168,
+  "notes": [
+    "Dados de DEMONSTRAÇÃO fictícios (parâmetro demo=true ou DEMO_MODE do servidor) — não são dados reais do GitHub.",
+    "PRs ordenados por atualização decrescente (primeira página da API)."
+  ],
+  "state_filter": "open",
+  "count": 3,
+  "items": [
+    {
+      "number": 202,
+      "title": "PR demo 2",
+      "state": "open",
+      "created_at": "2026-10-08T15:39:23.608017+00:00",
+      "closed_at": null,
+      "merged_at": null
+    },
+    {
+      "number": 203,
+      "title": "PR demo 3",
+      "state": "open",
+      "created_at": "2026-10-09T15:39:23.608017+00:00",
+      "closed_at": null,
+      "merged_at": null
+    },
+    {
+      "number": 204,
+      "title": "PR demo 4",
+      "state": "open",
+      "created_at": "2026-10-10T15:39:23.608017+00:00",
+      "closed_at": null,
+      "merged_at": null
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+[
+  {
+    "name": "get_repository_metrics",
+    "description": "Retorna as métricas gerais do DevOps Pulse para um repositório GitHub no período: commits, issues abertas/fechadas, pull requests abertos/fechados, PRs parados, execuções de CI (total/sucesso/falha/taxa) e alertas gerados. Somente leitura."
+  },
+  {
+    "name": "get_commit_activity",
+    "description": "Retorna a atividade de commits de um repositório GitHub no período: total, série diária e amostra dos commits mais recentes (sha, data, mensagem). Somente leitura."
+  },
+  {
+    "name": "get_pull_requests",
+    "description": "Lista os pull requests de um repositório GitHub com estado, datas e merged_at. Aceita filtro por estado (open, closed ou all). Somente leitura."
+  },
+  {
+    "name": "get_issues",
+    "description": "Lista as issues de um repositório GitHub (pull requests excluídos) com estado e datas. Aceita filtro por estado (open, closed ou all). Somente leitura."
+  },
+  {
+    "name": "analyze_repository_health",
+    "description": "Combina as métricas existentes em uma análise explicável de atividade e manutenção do repositório: observações com critérios e limites configurados. Não gera índice arbitrário nem avalia segurança. Somente leitura."
+  }
+]

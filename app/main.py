@@ -9,6 +9,7 @@ Endpoints:
 
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Query
@@ -21,6 +22,8 @@ from app.demo_data import build_demo_raw
 from app.github_client import GitHubAPIError, GitHubClient
 from app.health import build_health
 from app.logging_config import get_logger, setup_logging
+from app.mcp_server import create_mcp_http_app
+from app.mcp_server import mcp as mcp_server
 from app.metrics import compute_metrics
 from app.persistence import Persistence
 from app.pipeline import PulsePipeline, new_execution_id
@@ -31,10 +34,20 @@ import time
 setup_logging()
 logger = get_logger(__name__)
 
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    # O transporte MCP (montado em /mcp) exige o session manager ativo.
+    # Montar a sub-app não executa o lifespan dela; quem sobe é o app principal.
+    async with mcp_server.session_manager.run():
+        yield
+
+
 app = FastAPI(
     title="DevOps Pulse AI",
     version=__version__,
     description="Microsserviço de coleta, indicadores e boletim de operações de desenvolvimento.",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -42,7 +55,12 @@ app.add_middleware(
     allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
+    # Cliente MCP no navegador precisa ler o cabeçalho de sessão quando presente.
+    expose_headers=["Mcp-Session-Id"],
 )
+
+# Servidor MCP (Streamable HTTP) no mesmo processo/porta da API: http://127.0.0.1:8000/mcp
+app.mount("/mcp", create_mcp_http_app())
 
 settings = get_settings()
 

@@ -28,10 +28,12 @@ class GitHubAPIError(Exception):
 
 
 class GitHubClient:
-    def __init__(self, settings: Settings) -> None:
+    def __init__(self, settings: Settings, repo_full_name: str | None = None) -> None:
         self.settings = settings
         self.base_url = settings.github_api_base.rstrip("/")
-        self.repo = settings.repo_full_name
+        # repo_full_name permite consultar outro repositório (ex.: ferramentas MCP)
+        # sem alterar a configuração; o padrão continua sendo GITHUB_OWNER/REPOSITORY.
+        self.repo = repo_full_name or settings.repo_full_name
         self.timeout = settings.request_timeout_seconds
 
     def _headers(self) -> dict[str, str]:

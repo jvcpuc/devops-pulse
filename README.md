@@ -1,6 +1,6 @@
 # DevOps Pulse AI
 
-> Boletim inteligente de operações de desenvolvimento: coleta indicadores de um repositório no GitHub, gera alertas, produz um resumo com LLM local (Ollama), converte em áudio (Kokoro TTS), persiste o histórico e notifica por WhatsApp via n8n.
+> Boletim inteligente de operações de desenvolvimento: coleta indicadores de um repositório no GitHub, gera alertas, produz um resumo com LLM local (Ollama), converte em áudio (Kokoro TTS), persiste o histórico e notifica por WhatsApp via n8n. Expõe suas consultas como **ferramentas MCP** (Model Context Protocol) para clientes de IA compatíveis.
 
 [![Python](https://img.shields.io/badge/Python-3.12+-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
@@ -23,13 +23,15 @@ GitHub API  →  Python (FastAPI)  →  métricas + alertas
                       │
                       ├─► Ollama   → resumo executivo (texto)
                       ├─► Kokoro   → boletim em áudio (.wav)
-                      └─► SQLite   → histórico com execution_id
+                      ├─► SQLite   → histórico com execution_id
+                      │
+                      ├─► Servidor MCP (/mcp) → ferramentas para clientes de IA
                       │
                       ▼
                    n8n  →  WhatsApp (grupo) / e-mail / Telegram
                       │
                       ▼
-                 Dashboard HTML
+                 Dashboard HTML  (botões "Demonstração MCP" = cliente JSON-RPC real)
 ```
 
 **Princípio de design:** o LLM **não é fonte primária de dados**. Ele apenas interpreta indicadores já calculados pelo sistema — isso reduz alucinação e está alinhado a LGPD / IA responsável.
@@ -46,7 +48,8 @@ GitHub API  →  Python (FastAPI)  →  métricas + alertas
 | **SQLite** | Histórico de execuções (`execution_id`) |
 | **n8n** | Schedule, orquestração multicanal, fallback de notificação |
 | **Evolution API** | WhatsApp self-hosted (Baileys) para envio do boletim |
-| **Dashboard** | Visualização estática que consome a API |
+| **Servidor MCP** | Ferramentas padronizadas (Streamable HTTP em `/mcp` + stdio) para clientes de IA |
+| **Dashboard** | Visualização estática que consome a API — e atua como cliente MCP na demonstração |
 
 Detalhes: [`ARCHITECTURE.md`](ARCHITECTURE.md) · Requisitos: [`docs/requisitos.md`](docs/requisitos.md)
 
@@ -57,6 +60,7 @@ Detalhes: [`ARCHITECTURE.md`](ARCHITECTURE.md) · Requisitos: [`docs/requisitos.
 - **Coleta real** da GitHub API (commits, PRs, issues, workflow runs) com timeout e retry  
 - **Indicadores** de 24 h (configurável até 168 h): volume, stale PRs, taxa de sucesso de CI  
 - **Alertas** com severidade e thresholds configuráveis em `.env`  
+- **Servidor MCP**: mesmas consultas disponíveis como ferramentas para clientes de IA  
 - **Resumo com LLM local** (Ollama) com fallback rotulado se o modelo falhar  
 - **Áudio** via Kokoro (voz `pf_dora`) salvo em `data/results/audio/`  
 - **Persistência** SQLite + endpoint de histórico  
@@ -73,6 +77,7 @@ Detalhes: [`ARCHITECTURE.md`](ARCHITECTURE.md) · Requisitos: [`docs/requisitos.
 | Camada | Tecnologia |
 |--------|------------|
 | API | Python 3.12 · FastAPI · Pydantic · httpx · tenacity |
+| MCP | `mcp` (SDK oficial Python) — Streamable HTTP + stdio |
 | LLM | Ollama (`llama3.2:1b` neste ambiente) |
 | TTS | Kokoro FastAPI (Docker) |
 | Banco | SQLite |
@@ -87,20 +92,21 @@ Detalhes: [`ARCHITECTURE.md`](ARCHITECTURE.md) · Requisitos: [`docs/requisitos.
 ```text
 devops-pulse/
 ├── app/                    # microsserviço FastAPI
-│   ├── main.py             # endpoints HTTP
+│   ├── main.py             # endpoints HTTP + servidor MCP montado em /mcp
+│   ├── mcp_server.py       # servidor MCP (5 ferramentas somente-leitura)
 │   ├── pipeline.py         # coleta → métricas → LLM → TTS → persist
-│   ├── github_client.py    # API GitHub + retry
+│   ├── github_client.py    # API GitHub + retry (aceita repositório por chamada)
 │   ├── metrics.py          # indicadores
 │   ├── alerts.py           # thresholds
 │   ├── ollama_client.py    # resumo
 │   ├── tts_client.py       # Kokoro
 │   ├── persistence.py      # SQLite
 │   └── ...
-├── tests/                  # 21 testes (pytest)
+├── tests/                  # 34 testes (pytest) — inclui suíte MCP
 ├── n8n/                    # workflows importáveis
-├── dashboard/              # HTML do boletim visual
-├── scripts/                # stress test, relatório, start_services
-├── docs/                   # requisitos, diagnóstico, testes
+├── dashboard/              # HTML do boletim visual + seção "Demonstração MCP"
+├── scripts/                # stress test, relatório, start_services, start_demo
+├── docs/                   # requisitos, diagnóstico, testes, guia e relatório MCP
 ├── data/results/           # SQLite, áudios, JSON (gitignored)
 ├── ARCHITECTURE.md
 ├── ETHICS-LGPD.md
@@ -148,6 +154,7 @@ pip install -r requirements.txt
 | GET | `/api/pulse?hours=24` | Coleta + métricas + alertas |
 | POST | `/api/pipeline/run` | Pipeline completo (`with_llm`, `with_tts`, `persist`) |
 | GET | `/api/executions` | Histórico SQLite |
+| POST | `/mcp` | **Servidor MCP** (Streamable HTTP, JSON-RPC) |
 
 ```powershell
 curl http://127.0.0.1:8000/health
@@ -167,7 +174,7 @@ python -m app --live       # ignora DEMO_MODE
 
 ```powershell
 pytest -q
-# 21 passed
+# 34 passed (21 originais + 13 do servidor MCP)
 ```
 
 ### Stress test
@@ -180,6 +187,64 @@ python scripts/generate_report.py
 ### Dashboard
 
 Abra `dashboard/index.html` no navegador. Ele carrega `http://127.0.0.1:8000/api/pulse` e sobrepõe as latências do último pipeline completo.
+
+### Demonstração em um comando
+
+```powershell
+.\scripts\start_demo.ps1            # sobe API + MCP e abre o dashboard
+.\scripts\start_demo.ps1 -ForceDemo # força dados de demonstração
+```
+
+### MCP — Model Context Protocol
+
+**O que é, em uma frase:** o MCP é um padrão que permite que assistentes de IA (Claude, ChatGPT etc.) *descubram e usem* ferramentas de um programa — neste caso, as consultas do DevOps Pulse — sem integração sob medida.
+
+**Como funciona aqui:** o servidor MCP roda **no mesmo processo da API** e expõe as consultas já existentes (sem duplicar regra de negócio) em dois transportes:
+
+| Transporte | Endpoint / comando | Uso |
+|------------|--------------------|-----|
+| Streamable HTTP | `http://127.0.0.1:8000/mcp` | Página do dashboard e clientes MCP remotos locais |
+| stdio | `python -m app.mcp_server` | Clientes que iniciam o servidor como subproceso (ex.: Claude Desktop) |
+
+**Ferramentas disponíveis** (todas somente leitura):
+
+| Ferramenta | Parâmetros | Retorna |
+|------------|-----------|---------|
+| `get_repository_metrics` | `owner`, `repo`, `hours` (1–168), `demo` | Métricas gerais + alertas do período |
+| `get_commit_activity` | `owner`, `repo`, `hours`, `demo` | Total, série diária e amostra de commits |
+| `get_pull_requests` | `owner`, `repo`, `state` (open/closed/all), `limit`, `demo` | Lista de PRs com estado e datas |
+| `get_issues` | `owner`, `repo`, `state`, `limit`, `demo` | Issues reais (PRs excluídos) |
+| `analyze_repository_health` | `owner`, `repo`, `hours`, `demo` | Observações explicáveis com critérios e limitações |
+
+`demo`: `true` força dados fictícios rotulados; `false` força o GitHub real; omitido usa o `DEMO_MODE` do servidor. Todo resultado traz `data_source` — **nunca apresente `demo` como produção**.
+
+**Configurar um cliente MCP** (ex.: Claude Code):
+
+```powershell
+# Streamable HTTP (recomendado para a demonstração)
+claude mcp add devops-pulse --transport http http://127.0.0.1:8000/mcp
+
+# ou stdio (para clientes tipo Claude Desktop)
+claude mcp add devops-pulse -- .\.venv\Scripts\python.exe -m app.mcp_server
+```
+
+Exemplo de `claude_desktop_config.json` (stdio):
+
+```json
+{
+  "mcpServers": {
+    "devops-pulse": {
+      "command": "C:\\PUC\\2_Semestre\\AIFactory\\devops-pulse\\.venv\\Scripts\\python.exe",
+      "args": ["-m", "app.mcp_server"],
+      "env": { "DEMO_MODE": "true" }
+    }
+  }
+}
+```
+
+**Botões da página:** a seção "Demonstração MCP" do dashboard atua como um **cliente MCP real** — os botões enviam JSON-RPC (o protocolo de verdade) para `/mcp`, com estados aguardando/processando/concluído/erro, repositório e período selecionáveis, demonstração completa sequencial, copiar resumo e limpar. Detalhes e roteiro: [`docs/mcp-demo.md`](docs/mcp-demo.md) · Relatório técnico: [`docs/mcp-relatorio.md`](docs/mcp-relatorio.md)
+
+**Segurança:** ferramentas somente leitura; validação de `owner`/`repo` (sem caminhos, URLs ou comandos); sem execução de shell; token do GitHub nunca sai do servidor nem aparece em logs/erros; servidor aceita apenas hosts/origens locais (proteção anti DNS-rebinding).
 
 ### n8n
 

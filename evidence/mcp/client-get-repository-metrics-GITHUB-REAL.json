@@ -1,0 +1,45 @@
+{
+  "tool": "get_repository_metrics",
+  "status": "success",
+  "repository": "n8n-io/n8n",
+  "data_source": "github",
+  "queried_at": "2026-10-18T15:39:57.379477+00:00",
+  "period": {
+    "from": "2026-10-17T15:39:57.379477+00:00",
+    "to": "2026-10-18T15:39:57.379477+00:00"
+  },
+  "hours": 24,
+  "notes": [
+    "Coleta da primeira página da API do GitHub (até 100 itens por tipo) — sem paginação completa."
+  ],
+  "metrics": {
+    "commits": 2,
+    "issues_opened": 9,
+    "issues_closed": 2,
+    "pull_requests_opened": 18,
+    "pull_requests_closed": 4,
+    "stale_pull_requests": 32,
+    "open_issues": 10,
+    "workflow_runs": 100,
+    "workflow_success": 62,
+    "workflow_failure": 6,
+    "workflow_success_rate": 62.0
+  },
+  "alerts": [
+    {
+      "type": "CI_FAILURE",
+      "severity": "high",
+      "message": "Foram identificadas 6 execuções de CI/CD com falha no período."
+    },
+    {
+      "type": "LOW_CI_SUCCESS_RATE",
+      "severity": "high",
+      "message": "Taxa de sucesso de CI/CD em 62.0%, abaixo do limiar de 80%."
+    },
+    {
+      "type": "STALE_PR",
+      "severity": "medium",
+      "message": "32 pull request(s) aberto(s) há mais de 3 dias."
+    }
+  ]
+}

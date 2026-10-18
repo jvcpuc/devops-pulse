@@ -81,6 +81,28 @@
     .bar-fill { height: 100%; background: var(--accent); border-radius: 5px; }
     .note { color: var(--muted); font-size: 0.8rem; margin-top: 8px; }
     .mono { font-family: ui-monospace, Consolas, monospace; font-size: 0.8rem; }
+
+    /* --- Demonstração MCP --- */
+    .mcp-controls { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; align-items: end; }
+    .mcp-controls label { display: flex; flex-direction: column; gap: 4px; font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+    .mcp-controls input, .mcp-controls select {
+      background: #243044; border: 1px solid var(--border); color: var(--ink);
+      border-radius: 6px; padding: 7px 9px; font-size: 0.85rem; min-width: 130px;
+    }
+    .mcp-controls input:focus-visible, .mcp-controls select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+    .mcp-buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    .mcp-buttons button {
+      background: var(--accent); color: #08131f; border: none; border-radius: 6px;
+      padding: 8px 12px; font-size: 0.85rem; font-weight: 600; cursor: pointer;
+    }
+    .mcp-buttons button.secondary { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+    .mcp-buttons button:disabled { opacity: 0.45; cursor: not-allowed; }
+    .mcp-buttons button:focus-visible { outline: 2px solid var(--warn); outline-offset: 2px; }
+    .mcp-result { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; background: #16202e; }
+    .mcp-result.error { border-color: var(--bad); }
+    .mcp-result-title { font-weight: 600; font-size: 0.85rem; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .mcp-json { white-space: pre-wrap; word-break: break-word; max-height: 320px; overflow: auto; margin: 0; }
+    .mcp-hint { color: var(--muted); font-size: 0.78rem; }
   </style>
 </head>
 <body>
@@ -131,6 +153,52 @@
     </p>
     <div class="bar-wrap"><span class="bar-label">Manual</span><div class="bar-track"><div class="bar-fill" style="width:100%"></div></div><span class="mono" id="manual-t">—</span></div>
     <div class="bar-wrap"><span class="bar-label">Automatizado</span><div class="bar-track"><div class="bar-fill" id="auto-bar" style="width:8%;background:var(--ok)"></div></div><span class="mono" id="auto-t">—</span></div>
+  </div>
+
+  <div class="panel" id="mcp-panel">
+    <h2>Demonstração MCP <span class="badge demo" id="mcp-status" role="status" aria-live="polite">aguardando</span></h2>
+    <p class="note">
+      Esta seção é um <strong>cliente MCP real</strong>: os botões enviam mensagens JSON-RPC do
+      <em>Model Context Protocol</em> para o servidor do projeto em
+      <span class="mono">http://127.0.0.1:8000/mcp</span> — as mesmas ferramentas que qualquer
+      cliente MCP compatível (ex.: Claude Code, mcp-remote) descobre e executa.
+      Requer a API no ar: <span class="mono">.\scripts\start_demo.ps1</span>.
+    </p>
+    <div class="mcp-controls">
+      <label>Owner
+        <input id="mcp-owner" type="text" value="n8n-io" autocomplete="off" spellcheck="false"
+               aria-label="Proprietário do repositório no GitHub" />
+      </label>
+      <label>Repositório
+        <input id="mcp-repo" type="text" value="n8n" autocomplete="off" spellcheck="false"
+               aria-label="Nome do repositório no GitHub" />
+      </label>
+      <label>Período (horas)
+        <select id="mcp-hours" aria-label="Janela de análise em horas">
+          <option value="24" selected>24</option>
+          <option value="72">72</option>
+          <option value="168">168</option>
+        </select>
+      </label>
+      <label>Fonte dos dados
+        <select id="mcp-demo" aria-label="Fonte dos dados">
+          <option value="" selected>padrão do servidor (DEMO_MODE)</option>
+          <option value="true">forçar dados demo</option>
+          <option value="false">forçar GitHub real</option>
+        </select>
+      </label>
+    </div>
+    <div class="mcp-buttons">
+      <button id="btn-mcp-metrics" type="button">Consultar métricas</button>
+      <button id="btn-mcp-commits" type="button">Consultar commits</button>
+      <button id="btn-mcp-prs" type="button">Consultar pull requests</button>
+      <button id="btn-mcp-issues" type="button">Consultar issues</button>
+      <button id="btn-mcp-health" type="button">Analisar saúde</button>
+      <button id="btn-mcp-full" type="button">Executar demonstração completa</button>
+      <button id="btn-mcp-copy" type="button" class="secondary">Copiar resumo</button>
+      <button id="btn-mcp-clear" type="button" class="secondary">Limpar resultados</button>
+    </div>
+    <div id="mcp-results" aria-live="polite"></div>
   </div>
 
   <script>
@@ -185,6 +253,9 @@
 
       el("source-badge").textContent = data.data_source || "—";
       el("source-badge").className = "badge " + (data.data_source === "demo" ? "demo" : "success");
+
+      // Preenche os campos da seção MCP com o repositório da API, se vazios.
+      if (data.repository) prefillMcpRepo(data.repository);
 
       // Antes × Depois — premissas documentadas em PERFORMANCE.md
       // Manual: premissa do contexto (X min). Automatizado: total_pipeline_latency_ms medido.
@@ -298,6 +369,219 @@
           }
         });
       }
+    });
+
+    // ============ Demonstração MCP — cliente JSON-RPC real no navegador ============
+    // A página fala o protocolo MCP de verdade (JSON-RPC sobre Streamable HTTP) com o
+    // servidor montado em http://127.0.0.1:8000/mcp/ — as mesmas ferramentas que um
+    // cliente MCP externo descobre e executa. Nenhum token fica no navegador.
+    const MCP_URL = "http://127.0.0.1:8000/mcp/";
+    let mcpNextId = 1;
+
+    function prefillMcpRepo(repository) {
+      if (!repository || repository.indexOf("/") === -1) return;
+      const parts = repository.split("/");
+      if (!parts[0] || !parts[1]) return;
+      if (!el("mcp-owner").value) el("mcp-owner").value = parts[0];
+      if (!el("mcp-repo").value) el("mcp-repo").value = parts[1];
+    }
+
+    async function mcpPost(payload) {
+      const res = await fetch(MCP_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Accept": "application/json, text/event-stream" },
+        body: JSON.stringify(payload),
+      });
+      if (res.status === 202 || res.status === 204) return null; // notificação sem resposta
+      if (!res.ok) throw new Error("Servidor MCP respondeu HTTP " + res.status);
+      const text = await res.text();
+      return text ? JSON.parse(text) : null;
+    }
+
+    async function mcpInitialize() {
+      await mcpPost({
+        jsonrpc: "2.0", id: mcpNextId++, method: "initialize",
+        params: {
+          protocolVersion: "2025-06-18",
+          capabilities: {},
+          clientInfo: { name: "devops-pulse-dashboard", version: "1.0" },
+        },
+      });
+      await mcpPost({ jsonrpc: "2.0", method: "notifications/initialized" });
+    }
+
+    async function mcpCallTool(name, args) {
+      await mcpInitialize();
+      const resp = await mcpPost({
+        jsonrpc: "2.0", id: mcpNextId++, method: "tools/call",
+        params: { name: name, arguments: args },
+      });
+      if (!resp) throw new Error("Resposta vazia do servidor MCP.");
+      if (resp.error) throw new Error(resp.error.message || JSON.stringify(resp.error));
+      const r = resp.result || {};
+      if (r.isError || r.is_error) {
+        const msg = (r.content || []).map(function (c) { return c.text || ""; }).join("\n");
+        throw new Error(msg || "Erro desconhecido no servidor MCP.");
+      }
+      if (r.structuredContent) return r.structuredContent;
+      const t = (r.content || []).find(function (c) { return c.type === "text"; });
+      if (!t) throw new Error("Resposta sem conteúdo.");
+      try { return JSON.parse(t.text); } catch (_) { return { texto: t.text }; }
+    }
+
+    const MCP_TOOLS = [
+      { btn: "btn-mcp-metrics", tool: "get_repository_metrics" },
+      { btn: "btn-mcp-commits", tool: "get_commit_activity" },
+      { btn: "btn-mcp-prs", tool: "get_pull_requests" },
+      { btn: "btn-mcp-issues", tool: "get_issues" },
+      { btn: "btn-mcp-health", tool: "analyze_repository_health" },
+    ];
+
+    let mcpBusy = false;
+    const mcpLastResults = [];
+
+    function setMcpStatus(text, kind) {
+      const badge = el("mcp-status");
+      badge.textContent = text;
+      badge.className = "badge " + (kind || "demo");
+    }
+
+    function setMcpBusy(busy) {
+      mcpBusy = busy;
+      MCP_TOOLS.forEach(function (t) { el(t.btn).disabled = busy; });
+      el("btn-mcp-full").disabled = busy;
+    }
+
+    function mcpArgs() {
+      const args = {
+        owner: el("mcp-owner").value.trim(),
+        repo: el("mcp-repo").value.trim(),
+        hours: Number(el("mcp-hours").value),
+      };
+      const demoSel = el("mcp-demo").value;
+      if (demoSel !== "") args.demo = demoSel === "true";
+      return args;
+    }
+
+    // Renderização segura: dados do GitHub/IA entram como texto (textContent), nunca como HTML.
+    function appendMcpResult(title, data, isError, toolName) {
+      const wrap = document.createElement("div");
+      wrap.className = "mcp-result" + (isError ? " error" : "");
+      const head = document.createElement("div");
+      head.className = "mcp-result-title";
+      const nameSpan = document.createElement("span");
+      nameSpan.className = "mono";
+      nameSpan.textContent = title;
+      head.appendChild(nameSpan);
+      if (!isError && data && data.data_source) {
+        const badge = document.createElement("span");
+        badge.className = "badge " + (data.data_source === "demo" ? "demo" : "success");
+        badge.textContent = data.data_source === "demo" ? "dados demo (não são reais)" : "github real";
+        head.appendChild(badge);
+      }
+      if (!isError && data && data.queried_at) {
+        const when = document.createElement("span");
+        when.className = "mcp-hint";
+        when.textContent = "consultado em " + data.queried_at;
+        head.appendChild(when);
+      }
+      wrap.appendChild(head);
+      const pre = document.createElement("pre");
+      pre.className = "mono mcp-json";
+      pre.textContent = typeof data === "string" ? data : JSON.stringify(data, null, 2);
+      wrap.appendChild(pre);
+      el("mcp-results").prepend(wrap);
+      if (!isError && toolName) mcpLastResults.push({ tool: toolName, data: data });
+    }
+
+    async function runMcpTool(spec, args) {
+      setMcpStatus("processando (" + spec.tool + ")", "partial");
+      try {
+        const data = await mcpCallTool(spec.tool, args);
+        appendMcpResult(spec.tool + " → " + (data.repository || (args.owner + "/" + args.repo)), data, false, spec.tool);
+        if (data.repository) prefillMcpRepo(data.repository);
+        setMcpStatus("concluído", "success");
+        return data;
+      } catch (err) {
+        let msg = String(err && err.message ? err.message : err);
+        if (/Failed to fetch|NetworkError|Load failed|load failed/i.test(msg)) {
+          msg = "Servidor MCP indisponível em " + MCP_URL +
+                " — inicie a API (scripts\\start_demo.ps1) e recarregue a página.";
+        }
+        appendMcpResult(spec.tool + " → erro", msg, true);
+        setMcpStatus("erro", "error");
+        throw err;
+      }
+    }
+
+    MCP_TOOLS.forEach(function (spec) {
+      el(spec.btn).addEventListener("click", function () {
+        if (mcpBusy) return;
+        setMcpBusy(true);
+        runMcpTool(spec, mcpArgs()).catch(function () {}).finally(function () { setMcpBusy(false); });
+      });
+    });
+
+    el("btn-mcp-full").addEventListener("click", function () {
+      if (mcpBusy) return;
+      setMcpBusy(true);
+      (async function () {
+        // Sequencial e sem repetição: uma chamada por ferramenta, na ordem.
+        for (let i = 0; i < MCP_TOOLS.length; i++) {
+          try { await runMcpTool(MCP_TOOLS[i], mcpArgs()); }
+          catch (_) { break; } // para no primeiro erro
+        }
+      })().finally(function () { setMcpBusy(false); });
+    });
+
+    el("btn-mcp-copy").addEventListener("click", async function () {
+      if (!mcpLastResults.length) {
+        setMcpStatus("nada para copiar", "demo");
+        return;
+      }
+      const lines = [
+        "DevOps Pulse AI — resumo da demonstração MCP",
+        "Gerado em: " + new Date().toISOString(),
+        "",
+      ];
+      mcpLastResults.forEach(function (r) {
+        const d = r.data || {};
+        let line = r.tool + " (" + (d.repository || "-") + ", fonte=" + (d.data_source || "-") + ")";
+        if (r.tool === "get_repository_metrics" && d.metrics) {
+          line += ": commits=" + d.metrics.commits +
+            ", PRs abertos=" + d.metrics.pull_requests_opened +
+            ", issues abertas=" + d.metrics.issues_opened +
+            ", CI=" + d.metrics.workflow_success_rate + "%" +
+            ", alertas=" + (d.alerts || []).length;
+        } else if (r.tool === "get_commit_activity") {
+          line += ": total=" + d.total_commits + " commits";
+        } else if (r.tool === "get_pull_requests" || r.tool === "get_issues") {
+          line += ": " + d.count + " itens (estado=" + d.state_filter + ")";
+        } else if (r.tool === "analyze_repository_health") {
+          line += ": " + (d.observations || []).length + " observações" +
+            ", alertas críticos=" + ((d.alerts_by_severity || {}).high || 0);
+        }
+        lines.push("- " + line);
+      });
+      const text = lines.join("\n");
+      try {
+        await navigator.clipboard.writeText(text);
+        setMcpStatus("resumo copiado", "success");
+      } catch (_) {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand("copy"); setMcpStatus("resumo copiado", "success"); }
+        catch (_) { setMcpStatus("cópia falhou", "error"); }
+        document.body.removeChild(ta);
+      }
+    });
+
+    el("btn-mcp-clear").addEventListener("click", function () {
+      el("mcp-results").innerHTML = ""; // limpa apenas a área de demonstração
+      mcpLastResults.length = 0;
+      setMcpStatus("aguardando", "demo");
     });
   </script>
 </body>
