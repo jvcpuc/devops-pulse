@@ -9,7 +9,7 @@
 - Abas: health · `/api/pulse` · dashboard (seção "Demonstração MCP") · sqlite.html · n8n · WhatsApp grupo
 - Cliente MCP configurado e testado (ex.: `claude mcp add devops-pulse --transport http http://127.0.0.1:8000/mcp`)
 - PDF aberto na seção de métricas/ética
-- Áudio já gerado: `data/results/audio/PULSE-20260917-121306-7999.wav`
+- Áudio já gerado: o `.mp3` mais novo em `data\results\audio\` (Edge TTS/Antonio; ex.: `PULSE-TESTE-EDGE-antonio.mp3`)
 - Capturas de contingência: `evidence/14-mcp-dashboard.png` e `evidence/mcp/`
 
 ## Script bloco a bloco
@@ -20,17 +20,17 @@
 **Peso da rubrica:** narrativa + objetivo.
 
 ### 0:40–1:20 — Solução e arquitetura
-**Diga:** “Construímos um pipeline de automação com IA local: GitHub API → Python/FastAPI → métricas e alertas → Ollama (resumo) → Kokoro (áudio) → SQLite → n8n → WhatsApp do grupo. As consultas também são expostas como **ferramentas MCP** para clientes de IA.”
+**Diga:** “Construímos um pipeline de automação com IA local: GitHub API → Python/FastAPI → métricas e alertas → Ollama (resumo) → Edge TTS (áudio pt-BR) → SQLite → n8n → WhatsApp do grupo. As consultas também são expostas como **ferramentas MCP** para clientes de IA.”
 **Mostre:** diagrama do PDF / `ARCHITECTURE.md`.
 **Aponte:** “O LLM **não** inventa número — só interpreta indicadores já calculados.”
 
 ### 1:20–2:20 — Ambiente validado (ID 2.1 / evidências)
-**Diga:** “Ambiente local comprovado: Ollama llama3.2:1b, Kokoro, n8n e Evolution API no Docker. Testes 42 de 42 — incluindo o suíte do servidor MCP. Demo mode desligado — dados reais do repositório n8n-io/n8n.”
+**Diga:** “Ambiente local comprovado: Ollama llama3.2:1b, n8n e Evolution API no Docker (Kokoro como fallback TTS). Testes 47 de 47 — incluindo o suíte do servidor MCP. Demo mode desligado — dados reais do repositório n8n-io/n8n.”
 **Mostre:** `/health`, Docker Desktop, pytest.
 
 ### 2:20–3:40 — Protótipo e resultado medido (ID 2.2 / métricas)
-**Diga:** “Execução de referência PULSE-20260917-121306-7999: status success, fonte github. Coleta 5,5 s, Ollama 58,5 s, Kokoro 18,6 s — total 82,5 segundos. Stress de 10 a 50 requisições: 100% de sucesso, p95 em torno de 7 segundos.”
-**Mostre:** JSON `/api/pulse`, logs, áudio `.wav`, grid SQLite, WhatsApp com o boletim completo.
+**Diga:** “Execução de referência PULSE-20260917-121306-7999: status success, fonte github. Coleta 5,5 s, Ollama 58,5 s, TTS 18,6 s — total 82,5 segundos. Stress de 10 a 50 requisições: 100% de sucesso, p95 em torno de 7 segundos.”
+**Mostre:** JSON `/api/pulse`, logs, áudio `.mp3`, grid SQLite, WhatsApp com o boletim completo.
 **Número de impacto:** “De 25 minutos manuais para ~1,4 minuto — cerca de 94% menos tempo; ~8,5 horas/mês liberadas do TL.”
 
 ### 3:40–4:30 — Storytelling com dados (ID 3.1)
@@ -47,7 +47,7 @@
 **Aponte:** “Repare que o resultado traz `data_source`: quando é demo, o sistema avisa — não apresentamos dado fictício como real.”
 
 ### 5:30–6:20 — Melhorias (análise crítica)
-**Diga:** “Os gargalos estão medidos: GitHub API, Ollama e Kokoro. Prioridade de melhoria: cache da coleta (M1), LLM assíncrono (M2), TTS estável (M3), Sheets no n8n para o PO (M5) e baseline de anomalias (M6).”
+**Diga:** “Os gargalos estão medidos: GitHub API e Ollama — o TTS já foi estabilizado com Edge TTS (~5–10 s; antes 18–84 s com Kokoro). Prioridade de melhoria: cache da coleta (M1), LLM assíncrono (M2), Sheets no n8n para o PO (M5) e baseline de anomalias (M6).”
 **Mostre:** tabela M1–M8 em `PERFORMANCE.md`.
 
 ### 6:20–7:10 — Ética, LGPD e valor social (ID 3.2)

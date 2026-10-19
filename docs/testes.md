@@ -18,7 +18,7 @@ pytest -q
 ## Integração (manual / ambiente)
 
 ```text
-API → Python → Ollama → Kokoro → persistência
+API → Python → Ollama → Edge TTS → persistência
 ```
 
 1. Iniciar Ollama: `ollama serve` + `ollama pull <modelo>`

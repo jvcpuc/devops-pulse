@@ -5,7 +5,7 @@
 | RF01 | Consumir API pública (GitHub) | Funcional | Alta | Log + JSON | `app/github_client.py` |
 | RF02 | Calcular indicadores | Funcional | Alta | JSON | `app/metrics.py` |
 | RF03 | Usar Ollama | Funcional | Alta | Log + summary | `app/ollama_client.py` |
-| RF04 | Usar Kokoro | Funcional | Alta | Arquivo áudio | `app/tts_client.py` |
+| RF04 | TTS pt-BR (Edge; Kokoro fallback) | Funcional | Alta | Arquivo áudio | `app/tts_client.py` |
 | RF05 | Persistir resultado | Funcional | Alta | SQLite/DB | `app/persistence.py` |
 | RF06 | Integrar n8n | Funcional | Alta | Workflow | `n8n/etapa1.json`, `etapa2.json` |
 | RF07 | Enviar e-mail | Funcional | Alta | Mensagem | n8n Etapa 2 |

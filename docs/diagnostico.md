@@ -121,7 +121,7 @@ O ciclo **input → process → output** do boletim é altamente formalizável:
 
 ```text
 INPUT   GitHub API (commits, PRs, issues, workflow runs)
-PROCESS Python: normalizar → métricas → alertas → Ollama (resumo) → Kokoro (áudio)
+PROCESS Python: normalizar → métricas → alertas → Ollama (resumo) → Edge TTS (áudio)
 OUTPUT  JSON + SQLite (execution_id) → n8n → WhatsApp/e-mail → dashboard
 ```
 
@@ -129,7 +129,7 @@ OUTPUT  JSON + SQLite (execution_id) → n8n → WhatsApp/e-mail → dashboard
 
 1. A fonte é API pública/privada com contrato estável.
 2. As métricas são calculísticas (volume, idade de PR, taxa de CI) — o LLM **não precisa inventar número**, só narrar.
-3. O áudio (Kokoro) permite “ouvir o boletim” no caminho da daily.
+3. O áudio (Edge TTS) permite “ouvir o boletim” no caminho da daily.
 4. O n8n entrega no canal que o time já usa (grupo WhatsApp) com fallback.
 5. O SQLite + `execution_id` cria o histórico que o processo manual não tinha.
 
@@ -143,7 +143,7 @@ Ver pipeline implementado em `ARCHITECTURE.md` e matriz RF01–RF16 em `docs/req
 | Print de CI falhando / workflow com erro | `evidence/` | Coletar na demo |
 | JSON real da coleta | `data/results/report.json` / `data/results/dashboard-data.json` | Disponível |
 | Logs estruturados do pipeline | `logs/app.log` | Disponível |
-| Áudio do boletim | `data/results/audio/*.wav` | Disponível |
+| Áudio do boletim | `data/results/audio/*.mp3` | Disponível |
 | Linha no SQLite com `execution_id` | `data/results/pulse.db` | Disponível |
 | Stress test e relatório de performance | `data/results/stress_test_*.json`, `PERFORMANCE.md` | Disponível |
 | Lista completa de capturas sugeridas | `evidence/README.md` | Roteiro pronto |
@@ -158,6 +158,6 @@ Ver `docs/requisitos.md` (RF01–RF16). Objetivos SMART: `PROJECT.md` (O1–O10)
 
 - Rate limit da GitHub API (mitigado com token — 5.000 req/h).
 - LLM local (`llama3.2:1b`) pode ser lento (~50–90 s) — aceitável em pipeline agendado.
-- Kokoro/WhatsApp dependem de infra local/credenciais da máquina do apresentador.
+- Edge TTS (nuvem Microsoft) e WhatsApp dependem de internet/credenciais da máquina do apresentador; Kokoro segue como fallback offline.
 - Dados `DEMO_MODE` **não** servem como evidência de métricas de produção — só de funcionamento do pipeline.
 - Tempo manual de 25 min é **premissa** do contexto; se a equipe cronometrar diferente, atualizar `PERFORMANCE.md`.

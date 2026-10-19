@@ -1,6 +1,6 @@
 # DevOps Pulse AI
 
-> Boletim inteligente de operações de desenvolvimento: coleta indicadores de um repositório no GitHub, gera alertas, produz um resumo com LLM local (Ollama), converte em áudio (Kokoro TTS), persiste o histórico e notifica por WhatsApp via n8n. Expõe suas consultas como **ferramentas MCP** (Model Context Protocol) para clientes de IA compatíveis.
+> Boletim inteligente de operações de desenvolvimento: coleta indicadores de um repositório no GitHub, gera alertas, produz um resumo com LLM local (Ollama), converte em áudio (Edge TTS, pt-BR), persiste o histórico e notifica por WhatsApp via n8n. Expõe suas consultas como **ferramentas MCP** (Model Context Protocol) para clientes de IA compatíveis.
 
 [![Python](https://img.shields.io/badge/Python-3.12+-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
@@ -22,7 +22,7 @@ Uma **linha de produção de dados** com IA **local**:
 GitHub API  →  Python (FastAPI)  →  métricas + alertas
                       │
                       ├─► Ollama   → resumo executivo (texto)
-                      ├─► Kokoro   → boletim em áudio (.wav)
+                      ├─► Edge TTS → boletim em áudio (.mp3)
                       ├─► SQLite   → histórico com execution_id
                       │
                       ├─► Servidor MCP (/mcp) → ferramentas para clientes de IA
@@ -44,7 +44,7 @@ GitHub API  →  Python (FastAPI)  →  métricas + alertas
 |------------|--------|
 | **Python / FastAPI** (`app/`) | Coleta, normalização, métricas, alertas, retries, logs, pipeline HTTP/CLI |
 | **Ollama** | Resumo em linguagem natural a partir de métricas + alertas |
-| **Kokoro TTS** | Síntese do resumo em `.wav` |
+| **Edge TTS** | Síntese do resumo em `.mp3` (voz pt-BR Antonio; Kokoro como fallback) |
 | **SQLite** | Histórico de execuções (`execution_id`) |
 | **n8n** | Schedule, orquestração multicanal, fallback de notificação |
 | **Evolution API** | WhatsApp self-hosted (Baileys) para envio do boletim |
@@ -62,7 +62,7 @@ Detalhes: [`ARCHITECTURE.md`](ARCHITECTURE.md) · Requisitos: [`docs/requisitos.
 - **Alertas** com severidade e thresholds configuráveis em `.env`  
 - **Servidor MCP**: mesmas consultas disponíveis como ferramentas para clientes de IA  
 - **Resumo com LLM local** (Ollama) com fallback rotulado se o modelo falhar  
-- **Áudio** via Kokoro (voz `pf_dora`) salvo em `data/results/audio/`  
+- **Áudio** via Edge TTS (voz pt-BR Antonio; Kokoro como fallback) salvo em `data/results/audio/`  
 - **Persistência** SQLite + endpoint de histórico  
 - **n8n**: workflows Etapa 1 (pipeline) e Etapa 2 (multicanal)  
 - **WhatsApp** via Evolution API (grupo de operações)  
@@ -79,7 +79,7 @@ Detalhes: [`ARCHITECTURE.md`](ARCHITECTURE.md) · Requisitos: [`docs/requisitos.
 | API | Python 3.12 · FastAPI · Pydantic · httpx · tenacity |
 | MCP | `mcp` (SDK oficial Python) — Streamable HTTP + stdio |
 | LLM | Ollama (`llama3.2:1b` neste ambiente) |
-| TTS | Kokoro FastAPI (Docker) |
+| TTS | Edge TTS (Microsoft, pt-BR Antonio) · Kokoro FastAPI (Docker) como fallback |
 | Banco | SQLite |
 | Automação | n8n (Docker) |
 | WhatsApp | Evolution API 2.x + Postgres |
@@ -99,7 +99,7 @@ devops-pulse/
 │   ├── metrics.py          # indicadores
 │   ├── alerts.py           # thresholds
 │   ├── ollama_client.py    # resumo
-│   ├── tts_client.py       # Kokoro
+│   ├── tts_client.py       # Edge TTS (Kokoro: fallback)
 │   ├── persistence.py      # SQLite
 │   └── ...
 ├── tests/                  # 42 testes (pytest) — inclui suíte MCP
@@ -121,7 +121,7 @@ devops-pulse/
 ### Pré-requisitos
 
 - Python 3.12+
-- Docker (n8n, Kokoro, Evolution API — opcionais conforme o cenário)
+- Docker (n8n, Evolution API; Kokoro como fallback TTS — opcionais conforme o cenário)
 - Ollama instalado (opcional; sem ele o resumo cai em fallback)
 
 ### Setup
@@ -277,11 +277,11 @@ Números deste ambiente — detalhes em [`PERFORMANCE.md`](PERFORMANCE.md).
 | Cenário | Tempo |
 |---------|------:|
 | `/api/pulse` (só coleta) | ~6–8 s |
-| Pipeline completo (coleta + Ollama + Kokoro + SQLite) | ~2–3 min |
+| Pipeline completo (coleta + Ollama + TTS + SQLite) | ~1,2–2 min |
 | Stress 10/25/50 req · concorrência 5 | 100% sucesso · p95 ~6,6–7,3 s |
 | Consolidar boletim **na mão** (premissa) | 25 min |
 
-Gargalos: **Ollama** e **Kokoro** no pipeline cheio; **GitHub API** no pulse isolado.
+Gargalos: **Ollama** no pipeline cheio (o TTS caiu para ~5–10 s com Edge); **GitHub API** no pulse isolado.
 
 ---
 
@@ -302,7 +302,7 @@ Documento completo: [`ETHICS-LGPD.md`](ETHICS-LGPD.md)
 |-------|----------------|
 | GitHub API | Retry (tenacity) → erro 502 no `/api/pulse` |
 | Ollama | Texto fallback rotulado + `LLM_ERROR` |
-| Kokoro | Pipeline segue sem áudio + `TTS_ERROR` |
+| Edge TTS | Fallback Kokoro (se ativo) ou segue sem áudio + `TTS_ERROR` |
 | SQLite | `PERSISTENCE_ERROR`, status `partial` |
 | Canal WhatsApp | `onError: continue` no n8n — outros canais não são perdidos |
 

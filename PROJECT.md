@@ -9,7 +9,7 @@ Projeto acadêmico **AI Factory**: **DevOps Pulse AI — Boletim Inteligente de 
 | O1 | Coletar dados de API pública | `/api/pulse` retorna JSON com métricas |
 | O2 | Transformar em indicadores | `metrics.py` + testes verdes |
 | O3 | Resumo via Ollama | campo `summary` (ou fallback rotulado) |
-| O4 | Áudio via Kokoro | arquivo `.wav` ou `TTS_ERROR` explícito |
+| O4 | Áudio via TTS (Edge pt-BR) | arquivo `.mp3` ou `TTS_ERROR` explícito (Kokoro: fallback) |
 | O5 | Orquestrar no n8n | workflows Etapa 1 e 2 importáveis |
 | O6 | Persistir execuções | SQLite com `execution_id` |
 | O7 | Multicanal | e-mail + WhatsApp no n8n |

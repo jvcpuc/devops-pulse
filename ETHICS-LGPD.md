@@ -29,7 +29,7 @@
 | Falso “número mágico” | Se LLM falha, fallback **rotulado** `LLM_ERROR` / texto técnico |
 | Caixa-preta | Timings por estágio + `execution_id` em logs e SQLite |
 | Automação sem supervisão | Resumo é **apoio**; decisão crítica (ex.: “quem errou”) exige humano |
-| Vazamento para cloud | Ollama e Kokoro **locais** — métricas não saem da máquina |
+| Vazamento para cloud | Ollama **local**; o **texto do boletim** (métricas agregadas, sem dados pessoais) vai ao Edge TTS (Microsoft) para síntese de voz. Fallback Kokoro **local** mantido para uso 100% offline |
 
 ## 3. Impactos éticos, legais e sociais
 

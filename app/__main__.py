@@ -15,7 +15,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Executa o pipeline DevOps Pulse AI")
     parser.add_argument("--hours", type=int, default=24)
     parser.add_argument("--llm", action="store_true", help="Chamar Ollama")
-    parser.add_argument("--tts", action="store_true", help="Chamar Kokoro")
+    parser.add_argument("--tts", action="store_true", help="Chamar TTS (Edge/Kokoro)")
     parser.add_argument("--no-persist", action="store_true")
     parser.add_argument("--demo", action="store_true", help="Forçar modo demo")
     parser.add_argument("--live", action="store_true", help="Forçar GitHub API (ignora DEMO_MODE)")

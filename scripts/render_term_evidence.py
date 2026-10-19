@@ -213,16 +213,16 @@ def main():
 
     # --- 05 kokoro audio listing ---
     audio_dir = ROOT / "data" / "results" / "audio"
-    wavs = sorted(audio_dir.glob("*.wav"), key=lambda p: p.stat().st_mtime, reverse=True)
-    lines = [("dim", "PS> Get-ChildItem .\\data\\results\\audio\\*.wav | Sort LastWriteTime -Desc")]
-    if wavs:
-        for w in wavs[:8]:
-            kb = w.stat().st_size / 1024
-            lines.append(("green", f"  {w.name:42} {kb:8.1f} KB"))
-        lines.append(("cyan", f"total: {len(wavs)} arquivo(s) .wav — Kokoro TTS (voz pf_dora)"))
+    audios = sorted(audio_dir.glob("*.mp3"), key=lambda p: p.stat().st_mtime, reverse=True)
+    lines = [("dim", "PS> Get-ChildItem .\\data\\results\\audio\\*.mp3 | Sort LastWriteTime -Desc")]
+    if audios:
+        for a in audios[:8]:
+            kb = a.stat().st_size / 1024
+            lines.append(("green", f"  {a.name:42} {kb:8.1f} KB"))
+        lines.append(("cyan", f"total: {len(audios)} arquivo(s) .mp3 — TTS (Edge Antonio; Kokoro fallback)"))
     else:
-        lines.append(("yellow", "  nenhum wav ainda (pipeline em andamento?)"))
-    term_shot("05-kokoro.png", "Kokoro TTS — áudios gerados", lines)
+        lines.append(("yellow", "  nenhum mp3 ainda (pipeline em andamento?)"))
+    term_shot("05-kokoro.png", "TTS — áudios gerados (Edge Antonio)", lines)
 
     # --- pytest ---
     # captured separately if available

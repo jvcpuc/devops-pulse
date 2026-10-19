@@ -120,3 +120,27 @@ def test_whatsapp_qr_endpoint(monkeypatch):
     data = resp.json()
     assert data["qr_base64"].startswith("data:image/")
     assert data["pairing_code"] == "ABCD-EFGH"
+
+
+def test_send_audio_rejects_empty_file(tmp_path):
+    """Áudio de 0 bytes é recusado antes de qualquer chamada de rede.
+
+    Regressão do caso real: o Edge TTS (bloqueado) gravava um .mp3 vazio e o
+    envio seguia mesmo assim — agora falha com erro claro.
+    """
+    from app.config import Settings
+    from app.whatsapp_client import WhatsAppClient
+
+    empty = tmp_path / "boletim.mp3"
+    empty.write_bytes(b"")
+    wa = WhatsAppClient(
+        Settings(
+            whatsapp_enabled=True,
+            whatsapp_api_url="http://127.0.0.1:18080",
+            whatsapp_token="chave-teste",
+            whatsapp_to="120363412036540372@g.us",
+        )
+    )
+    ok, meta = wa.send_audio(empty)
+    assert ok is False
+    assert "vazio" in meta["error"]

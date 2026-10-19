@@ -16,7 +16,7 @@ status `success` · `data_source=github` · total **82,5 s** · áudio + resumo 
 | `03-n8n-etapa1-diagram.png` | Diagrama do fluxo Etapa 1 | OK |
 | `03-n8n-login.png` | Tela de login do n8n (UI protegida) | OK |
 | `04-ollama.png` | Modelo `llama3.2:1b` disponível | OK |
-| `05-kokoro.png` | `.wav` gerado pelo Kokoro (`pf_dora`) | OK |
+| `05-kokoro.png` | `.mp3` gerados pelo TTS (Edge Antonio; motor atual) | OK |
 | `06-planilha.png` | SQLite `executions` com `execution_id` | OK |
 | `07-n8n-etapa2.png` | Etapa 2 multicanal listada | OK |
 | `07-evolution-manager.png` | Evolution API no ar | OK |

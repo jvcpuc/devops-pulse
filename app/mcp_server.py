@@ -571,7 +571,8 @@ def run_stress_test(
         "Executa o pipeline COMPLETO do DevOps Pulse AI (coleta → métricas → alertas → "
         "resumo com LLM local → boletim → áudio TTS → persistência no SQLite) e envia o "
         "boletim formatado no WhatsApp configurado, anexando o áudio do boletim quando "
-        "disponível. ATENÇÃO: tem efeitos reais — consome Ollama/Kokoro locais, grava no "
+        "disponível. ATENÇÃO: tem efeitos reais — consome Ollama e TTS (Edge; Kokoro "
+        "como fallback), grava no "
         "banco e ENVIA mensagem no WhatsApp (WHATSAPP_TO). Use send_whatsapp=false para "
         "apenas executar o pipeline sem enviar."
     ),
@@ -582,7 +583,7 @@ def run_full_bulletin(
         bool, Field(description="Gerar resumo com o LLM local (Ollama). Padrão true.")
     ] = True,
     with_tts: Annotated[
-        bool, Field(description="Gerar áudio do boletim (Kokoro/Edge). Padrão true.")
+        bool, Field(description="Gerar áudio do boletim (Edge; Kokoro fallback). Padrão true.")
     ] = True,
     send_whatsapp: Annotated[
         bool,

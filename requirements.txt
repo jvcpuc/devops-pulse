@@ -5,6 +5,9 @@ pydantic>=2.8.0
 pydantic-settings>=2.4.0
 python-dotenv>=1.0.1
 tenacity>=8.5.0
+# edge-tts via git: o PyPI (7.2.8) está com 403 desde 2026-10-10 (tokens
+# Sec-MS-GEC da Microsoft); o main traz o hotfix. Kokoro = fallback offline.
+edge-tts @ git+https://github.com/rany2/edge-tts
 mcp>=2.3.0,<3
 pytest>=8.3.0
 pytest-asyncio>=0.24.0

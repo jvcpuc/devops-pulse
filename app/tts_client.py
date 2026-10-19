@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import asyncio
+import html
+import re
 from pathlib import Path
 
 import httpx
@@ -13,6 +15,75 @@ from app.logging_config import get_logger
 logger = get_logger(__name__)
 
 AUDIO_DIR = PROJECT_ROOT / "data" / "results" / "audio"
+
+# Termos de TI em inglês que a voz pt-BR leria com fonemas portugueses
+# (ex.: "pull requests" saía como "pɔl ɔkʷists"). O SSML <phoneme alphabet="ipa">
+# dita a pronúncia inglesa correta mantendo a mesma voz (servidor Kokoro FastAPI).
+# Mantenha os plurais separados — o regex usa a palavra inteira (\b).
+_EN_G2P: dict[str, str] = {
+    "devops": "ˈdɛvɑps",
+    "github": "ˈɡɪthʌb",
+    "git": "ɡɪt",
+    "pipeline": "ˈpaɪpaɪl",
+    "commit": "kəˈmɪt",
+    "commits": "kəˈmɪts",
+    "pull": "pʊl",
+    "request": "rɪˈkwest",
+    "requests": "rɪˈkwests",
+    "workflow": "ˈwɝkfloʊ",
+    "workflows": "ˈwɝkfloʊz",
+    "health": "hɛlθ",
+    "check": "tʃɛk",
+    "checks": "tʃɛks",
+    "ci": "siːˈaɪ",
+    "cd": "siːˈdiː",
+    "docker": "ˈdɑkər",
+    "kubernetes": "ˌkubərˈnɛtɪs",
+    "mcp": "ɛm siː piː",
+    "n8n": "ɛn eɪt ɛn",
+    "json": "ˈdʒeɪsən",
+    "api": "eɪ piː ˈaɪ",
+    "sla": "ɛs ɛl ˈeɪ",
+    "qa": "kjuː ˈeɪ",
+    "llm": "ɛl ɛl ˈɛm",
+    "merge": "mɝdʒ",
+    "merged": "mɝdʒd",
+    "release": "rɪˈliːs",
+    "releases": "rɪˈliːsɪz",
+    "bug": "bʌɡ",
+    "bugs": "bʌɡz",
+    "deploy": "dɪˈplɔɪ",
+    "deployed": "dɪˈplɔɪd",
+    "run": "rʌn",
+    "runs": "rʌnz",
+    "action": "ˈækʃən",
+    "actions": "ˈækʃənz",
+    "server": "ˈsɝvər",
+    "servers": "ˈsɝvərz",
+    "branch": "bræntʃ",
+    "branches": "ˈbræntʃɪz",
+    "test": "tɛst",
+    "tests": "tɛsts",
+    "status": "ˈsteɪtəs",
+    "webhook": "ˈwɛbʊk",
+    "webhooks": "ˈwɛbʊks",
+}
+
+_EN_WORDS_RE = re.compile(
+    r"\b(" + "|".join(sorted(map(re.escape, _EN_G2P), key=len, reverse=True)) + r")\b",
+    re.IGNORECASE,
+)
+
+
+def _ssml_speech(text: str) -> str:
+    """SSML com os termos de TI marcados para pronúncia inglesa (IPA)."""
+    escaped = html.escape(text, quote=False)
+
+    def _wrap(match: re.Match[str]) -> str:
+        word = match.group(0)
+        return f'<phoneme alphabet="ipa" ph="{_EN_G2P[word.lower()]}">{word}</phoneme>'
+
+    return f"<speak>{_EN_WORDS_RE.sub(_wrap, escaped)}</speak>"
 
 
 def _prepare_speech_text(text: str, max_chars: int = 1200) -> str:
@@ -64,20 +135,45 @@ class TTSClient:
         except httpx.HTTPError:
             return False
 
+    def _ssml_to_native(self, ssml: str) -> str | None:
+        """Traduz SSML para o formato nativo do Kokoro ([palavra](/ipa/)).
+
+        Fallback=None: se o endpoint não existir, sintetiza o texto puro.
+        """
+        try:
+            with httpx.Client(timeout=self.timeout) as client:
+                resp = client.post(
+                    f"{self.base_url}/dev/ssml",
+                    json={"text": ssml, "voice": self.voice},
+                )
+                resp.raise_for_status()
+                return ((resp.json() or {}).get("text") or "") or None
+        except (httpx.HTTPError, ValueError) as exc:
+            logger.warning("SSML indisponível, usando texto puro: %s", exc)
+            return None
+
     def synthesize(self, text: str, execution_id: str) -> tuple[str | None, dict]:
-        """Kokoro local → WAV. Retorna (caminho|None, meta)."""
+        """Kokoro local → MP3 (comprimido, ~10x menor que WAV). Retorna (caminho|None, meta)."""
         if not self.enabled:
             return None, {"success": False, "error": "TTS desabilitado (KOKORO_ENABLED=false)"}
 
         AUDIO_DIR.mkdir(parents=True, exist_ok=True)
-        out_path = AUDIO_DIR / f"{execution_id}.wav"
+        out_path = AUDIO_DIR / f"{execution_id}.mp3"
         speech = _prepare_speech_text(text)
+
+        # Termos em inglês com pronúncia IPA correta (o resto segue em pt-BR).
+        ssml_used = False
+        payload_input = speech
+        native = self._ssml_to_native(_ssml_speech(speech))
+        if native:
+            payload_input = native
+            ssml_used = True
 
         body = {
             "model": "kokoro",
-            "input": speech,
+            "input": payload_input,
             "voice": self.voice,
-            "response_format": "wav",
+            "response_format": "mp3",
         }
         try:
             with httpx.Client(timeout=self.timeout) as client:
@@ -92,6 +188,7 @@ class TTSClient:
                     "bytes": len(content),
                     "voice": self.voice,
                     "engine": "kokoro",
+                    "ssml": ssml_used,
                 }
         except (httpx.HTTPError, ValueError) as exc:
             logger.warning("Kokoro indisponível/falhou: %s", exc)
@@ -124,5 +221,8 @@ class TTSClient:
                 "engine": "edge",
             }
         except Exception as exc:  # noqa: BLE001
+            # remove arquivo parcial (ex.: 0 bytes quando o serviço bloqueia)
+            # para não deixar um mp3 vazio que confunde quem olha o diretório.
+            out_path.unlink(missing_ok=True)
             logger.warning("Edge TTS falhou: %s", exc)
             return None, {"success": False, "error": str(exc), "engine": "edge"}

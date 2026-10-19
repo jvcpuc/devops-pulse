@@ -168,7 +168,7 @@ def whatsapp_evidence():
         lines_h.append((kind, f"  [{ok:4}] {name:10} {comp.get('detail', '')}{extra}"))
     lines_h += [
         ("dim", ""),
-        ("fg", "4 componentes monitorados: GitHub API · Ollama · Kokoro · n8n."),
+        ("fg", "4 componentes monitorados: GitHub API · Ollama · TTS (Edge/Kokoro) · n8n."),
         ("green", "Se um cair, o pipeline degrada com fallback rotulado — não trava o boletim."),
     ]
     term_shot("01-api-health.png", "GET /health — componentes do DevOps Pulse AI", lines_h)

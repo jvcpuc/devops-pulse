@@ -10,7 +10,7 @@ Microsserviço Python (FastAPI :8000)
   github_client → metrics → alerts
         │
         ├─► Ollama (LLM local) ──► summary
-        ├─► Kokoro (TTS) ──► .wav
+        ├─► Edge TTS (pt-BR) ──► .mp3   (Kokoro: fallback offline)
         └─► SQLite (executions)
         │
         ▼
@@ -29,7 +29,7 @@ Microsserviço Python (FastAPI :8000)
 | **Python** | Coleta, normalização, métricas, alertas, validação, logs, latências, endpoint HTTP, pipeline CLI |
 | **n8n** | Schedule, orquestra canais, fallback de notificação, registro de execução do fluxo |
 | **Ollama** | Somente interpretação dos indicadores (não recebe dados brutos desnecessários) |
-| **Kokoro** | TTS do resumo |
+| **Edge TTS** | TTS do resumo (pt-BR Antonio) |
 | **SQLite** | Histórico de execuções |
 
 ## Contrato `/api/pulse`
@@ -56,7 +56,7 @@ Resposta alinhada à especificação (campos + `execution_id`, `timings`, `data_
 |-------|----------------|
 | GitHub API | Retry (tenacity) → erro 502 no `/api/pulse`; pipeline registra `COLLECTION_ERROR` |
 | Ollama | Fallback de texto rotulado + `LLM_ERROR` |
-| Kokoro | Continua sem áudio + `TTS_ERROR` |
+| Edge TTS | Fallback Kokoro (se ativo) ou segue sem áudio + `TTS_ERROR` |
 | SQLite | `PERSISTENCE_ERROR`, pipeline vira `partial` |
 | WhatsApp (n8n) | `onError: continue` — e-mail não é perdido |
 

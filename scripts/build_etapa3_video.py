@@ -29,7 +29,7 @@ SLIDES = [
 ]
 
 # Termos técnicos escritos para pronúncia pt-BR convincente:
-# n8n = ene-oito-ene · GitHub · Ollama · Kokoro · SQLite = sequelite
+# n8n = ene-oito-ene · GitHub · Ollama · Edge TTS · SQLite = sequelite
 # pull requests = pul-riquéstes · LGPD · API · CI = integração contínua
 SCRIPT = {
     "01-capitulo-problema": (

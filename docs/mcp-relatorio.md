@@ -172,9 +172,9 @@ pytest -q  →  42 passed  (21 originais + 18 de MCP + 3 de WhatsApp, 0 falhas)
 - **Estresse real**: `run_stress_test` com `5,10` requisições contra
   `/health` → 15/15 sucesso, 100%, p95 ~5,1 s (o `/health` consulta todos
   os componentes — custo real medido).
-- **Boletim completo real** (`run_full_bulletin`, GitHub + Ollama + Kokoro):
+- **Boletim completo real** (`run_full_bulletin`, GitHub + Ollama + TTS):
   execução de 172 s do pipeline completo — coleta real de `n8n-io/n8n`,
-  áudio `.wav` gerado pelo **Kokoro**, persistência no SQLite; sem
+  áudio `.mp3` gerado pelo TTS (Kokoro à época; hoje Edge TTS), persistência no SQLite; sem
   pareamento do WhatsApp, a ferramenta detectou `connecting` e informou o
   pendente sem enviar (falha rápida de 0,1 s, sem esperar timeout).
 - **WhatsApp**: `/api/whatsapp/status` devolve `ready:false` + estado;
@@ -215,6 +215,7 @@ pytest -q  →  42 passed  (21 originais + 18 de MCP + 3 de WhatsApp, 0 falhas)
   e informa o envio pendente. O envio de texto usa `sendText` e o de áudio
   `sendMedia` (campo `media` da Evolution v2.3.7) — validados até a camada
   de conexão do Baileys.
-- **Edge TTS** retornou 403 durante a validação (token do serviço público
-  bloqueado); o pipeline segue com o **Kokoro** como fonte do áudio
-  (`KOKORO_ENABLED=true` no `pulse.env`).
+- **Edge TTS**: o pacote do PyPI (7.2.8) ficou com 403 de 2026-10-10 a
+  2026-10-19 (tokens `Sec-MS-GEC` da Microsoft); a versão instalada via git
+  resolve e é hoje o **motor principal** do áudio (`KOKORO_ENABLED=false`;
+  Kokoro permanece como fallback offline).

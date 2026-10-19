@@ -36,13 +36,13 @@ class Settings(BaseSettings):
     ollama_model: str = "llama3.2"
     ollama_timeout_seconds: float = 60.0
 
-    # Kokoro
+    # Kokoro (fallback offline — o motor principal é o Edge TTS abaixo)
     kokoro_base_url: str = "http://localhost:8880"
-    kokoro_enabled: bool = True
+    kokoro_enabled: bool = False
     kokoro_voice: str = "pf_dora"
     kokoro_timeout_seconds: float = 60.0
 
-    # Edge TTS (voz neural pt-BR — áudio de apresentação)
+    # Edge TTS (voz neural pt-BR — motor principal do áudio do boletim)
     edge_tts_enabled: bool = True
     edge_tts_voice: str = "pt-BR-AntonioNeural"
     edge_tts_rate: str = "-8%"

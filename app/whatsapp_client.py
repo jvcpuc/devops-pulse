@@ -15,7 +15,7 @@ logger = get_logger(__name__)
 
 
 def _audio_mimetype(path: Path) -> str:
-    """Mimetype do áudio a partir da extensão (Kokoro gera .wav; Edge, .mp3)."""
+    """Mimetype do áudio a partir da extensão (Kokoro e Edge geram .mp3)."""
     return {
         ".wav": "audio/wav",
         ".mp3": "audio/mpeg",
@@ -187,6 +187,8 @@ class WhatsAppClient:
         path = Path(audio_path)
         if not path.is_file():
             return False, {"success": False, "error": f"Áudio não encontrado: {path}"}
+        if path.stat().st_size == 0:
+            return False, {"success": False, "error": f"Áudio vazio (0 bytes): {path.name}"}
         try:
             payload = {
                 "number": self.to,
@@ -200,7 +202,24 @@ class WhatsAppClient:
                 payload["caption"] = caption
             url = f"{self.base_url}/message/sendMedia/{self.instance}"
             with httpx.Client(timeout=max(self.timeout, 60.0)) as client:
-                resp = client.post(url, json=payload, headers=self._headers())
+                # O socket do Baileys oscila (keep-alive/WSL2) e já derrubou o
+                # envio do áudio logo após o texto — re-tenta em 5xx/queda.
+                resp = None
+                for attempt in range(3):
+                    if attempt:
+                        time.sleep(2.0)
+                    try:
+                        resp = client.post(url, json=payload, headers=self._headers())
+                    except httpx.HTTPError as exc:
+                        logger.warning("sendAudio falhou (tentativa %d): %s", attempt + 1, exc)
+                        continue
+                    if resp.status_code >= 500:
+                        logger.warning(
+                            "sendAudio HTTP %d (tentativa %d)", resp.status_code, attempt + 1
+                        )
+                        continue
+                    break
+                assert resp is not None
                 resp.raise_for_status()
                 data = resp.json()
             key = ((data.get("key") or {}).get("id")) or ""

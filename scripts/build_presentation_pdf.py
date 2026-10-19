@@ -205,7 +205,7 @@ def build():
     story.append(HRFlowable(width="100%", thickness=1.2, color=ACCENT, spaceBefore=6, spaceAfter=10))
     story.append(Paragraph(
         "Projeto acadêmico <b>AI Factory</b> — Etapa 1 / Unidade 2<br/>"
-        "Pipeline de automação: GitHub API → Python/FastAPI → Ollama → Kokoro TTS → SQLite → n8n → WhatsApp",
+        "Pipeline de automação: GitHub API → Python/FastAPI → Ollama → Edge TTS → SQLite → n8n → WhatsApp",
         S["Body"],
     ))
     story.append(Spacer(1, 6 * mm))
@@ -225,7 +225,7 @@ def build():
     ))
     story.append(Spacer(1, 8 * mm))
     story.append(Paragraph(
-        "Equipe de contexto: 5 devs (1 TL) + 1 PO · Persistência: SQLite · LLM local: Ollama · TTS: Kokoro",
+        "Equipe de contexto: 5 devs (1 TL) + 1 PO · Persistência: SQLite · LLM local: Ollama · TTS: Edge (pt-BR)",
         S["Small"],
     ))
     story.append(Spacer(1, 10 * mm))
@@ -260,7 +260,7 @@ def build():
     story.append(Spacer(1, 4 * mm))
     story.append(Paragraph("Oportunidade de automação", S["H2"]))
     story.append(Paragraph(
-        "Ciclo formalizável: <b>INPUT</b> GitHub API → <b>PROCESS</b> métricas + alertas + LLM (Ollama) + áudio (Kokoro) → "
+        "Ciclo formalizável: <b>INPUT</b> GitHub API → <b>PROCESS</b> métricas + alertas + LLM (Ollama) + áudio (Edge TTS) → "
         "<b>OUTPUT</b> JSON, SQLite com execution_id, n8n e WhatsApp.",
         S["Body"],
     ))
@@ -279,9 +279,9 @@ def build():
         ["Objetivo", "Boletim operacional automatizado com indicadores, alertas e resumo executivo."],
         ["Proposta de valor", "Menos esforço manual, rastreabilidade por execution_id, IA local, entrega em WhatsApp."],
         ["Entradas", "GitHub API (commits, issues, PRs, workflow runs)."],
-        ["Processamento", "Python: normalizar → métricas → alertas → Ollama → Kokoro → SQLite."],
+        ["Processamento", "Python: normalizar → métricas → alertas → Ollama → Edge TTS → SQLite."],
         ["Saídas", "JSON /api/pulse, resumo em texto, áudio .wav, SQLite, notificações, dashboard."],
-        ["Recursos / stack", "Python 3.12, FastAPI, n8n, Ollama, Kokoro, SQLite, Evolution API, Docker."],
+        ["Recursos / stack", "Python 3.12, FastAPI, n8n, Ollama, Edge TTS, SQLite, Evolution API, Docker."],
         ["Riscos", "API indisponível, rate limit, Ollama lento, TTS fora, alucinação, vazamento de token."],
         ["Mitigações", "Retry, demo mode rotulado, fallback texto, .env gitignored, prompt restritivo, supervisão."],
         ["Entregáveis", "Microsserviço, workflows n8n, 21 testes, stress test, dashboard, docs, evidências, PDF."],
@@ -297,7 +297,7 @@ def build():
     story.append(Spacer(1, 4 * mm))
     story.append(Paragraph("Objetivos SMART (resumo)", S["H2"]))
     story.append(bullets([
-        "O1 Coleta de API pública · O2 Indicadores · O3 Resumo Ollama · O4 Áudio Kokoro · O5 Orquestração n8n",
+        "O1 Coleta de API pública · O2 Indicadores · O3 Resumo Ollama · O4 Áudio TTS · O5 Orquestração n8n",
         "O6 Persistência SQLite · O7 Multicanal · O8 Robustez (retries/logs/fallbacks) · O9 Performance · O10 Avaliação",
     ], S))
     story.append(PageBreak())
@@ -305,12 +305,12 @@ def build():
     # 3 AMBIENTE
     story.append(Paragraph("3. Ambiente de automação (ID 2.1)", S["H1"]))
     story.append(Paragraph(
-        "Chamadas HTTP em Python (FastAPI + curl), fluxos no n8n e Ollama/Kokoro executando localmente.",
+        "Chamadas HTTP em Python (FastAPI + curl), fluxos no n8n e Ollama/TTS executando localmente.",
         S["Body"],
     ))
     story.append(Paragraph("Saúde do sistema (componentes reais)", S["H2"]))
     story.append(term_img(EV / "02-python.png", 75))
-    story.append(caption("Fig. 2 — /health: GitHub, Ollama, Kokoro e n8n OK · demo_mode=false.", S))
+    story.append(caption("Fig. 2 — /health: GitHub, Ollama, TTS e n8n · demo_mode=false.", S))
     story.append(Paragraph("Infra local — Docker Desktop (containers no ar)", S["H2"]))
     story.append(term_img(EV / "n8n_1.png", 90))
     story.append(caption(
@@ -318,11 +318,11 @@ def build():
         S,
     ))
     story.append(PageBreak())
-    story.append(Paragraph("LLM local — Ollama · TTS local — Kokoro", S["H2"]))
+    story.append(Paragraph("LLM local — Ollama · TTS pt-BR — Edge (Kokoro: fallback offline)", S["H2"]))
     story.append(term_img(EV / "04-ollama.png", 55))
     story.append(caption("Fig. 4 — Modelo llama3.2:1b no Ollama local.", S))
     story.append(term_img(EV / "05-kokoro.png", 45))
-    story.append(caption("Fig. 5 — Áudios .wav gerados pelo Kokoro (voz pf_dora).", S))
+    story.append(caption("Fig. 5 — Áudios .mp3 gerados pelo TTS (Edge, voz Antonio pt-BR).", S))
     story.append(PageBreak())
 
     story.append(Paragraph("3.1 n8n — workflows no editor", S["H2"]))
@@ -353,7 +353,7 @@ def build():
     # 4 PROTOTIPO
     story.append(Paragraph("4. Protótipo funcional (ID 2.2)", S["H1"]))
     story.append(Paragraph(
-        "Consome <b>API pública real</b> (GitHub), gera <b>resumo LLM</b> (Ollama), sintetiza <b>áudio TTS</b> (Kokoro) "
+        "Consome <b>API pública real</b> (GitHub), gera <b>resumo LLM</b> (Ollama), sintetiza <b>áudio TTS</b> (Edge) "
         "e grava o resultado em <b>banco simples</b> (SQLite) com rastreio por execution_id.",
         S["Body"],
     ))
@@ -451,7 +451,7 @@ def build():
     story.append(section_table([
         ["Etapa", "O que acontece", "Tecnologia"],
         ["INPUT", "Coleta de commits, PRs, issues e workflow runs", "GitHub API + httpx + retry"],
-        ["PROCESS", "Métricas, alertas, resumo em linguagem natural, síntese de voz", "Python, Ollama, Kokoro"],
+        ["PROCESS", "Métricas, alertas, resumo em linguagem natural, síntese de voz", "Python, Ollama, Edge TTS"],
         ["OUTPUT", "JSON, áudio, SQLite, dashboard e notificação", "FastAPI, SQLite, n8n, Evolution"],
     ], col_widths=[30 * mm, 85 * mm, 55 * mm]))
     story.append(Spacer(1, 4 * mm))

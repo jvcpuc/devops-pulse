@@ -11,7 +11,7 @@
 | `PULSE-20260917-121306-7999` | success / github | 5,5 s | 58,5 s | 18,6 s | **82,5 s** |
 | `/api/pulse` isolado (sem LLM/TTS) | — | ~6–8 s | — | — | **~6–8 s** |
 
-Variação: rede (GitHub) e tempo de síntese do Kokoro (cache/warmup).
+Variação: rede (GitHub) e tempo de síntese do TTS na época — Kokoro (cache/warmup). Hoje o Edge TTS sintetiza o mesmo boletim em ~5–10 s.
 
 ## Taxa de sucesso
 
@@ -48,12 +48,12 @@ horas_economizadas  ≈ 8,5 h/mês do TL
 - **Detecção mais cedo:** alertas de CI/stale PR chegam no grupo, não “quem lembrar”.
 - **Rastreabilidade:** `execution_id` liga JSON → SQLite → WhatsApp.
 - **Menos ponto único de falha:** TL não é mais o único consolidador.
-- **Privacidade:** LLM local — indicadores não saem da máquina.
+- **Privacidade:** LLM local; na síntese, só o texto agregado do boletim vai ao Edge TTS (Microsoft) — sem dados pessoais (Kokoro local como fallback).
 
 ## Gargalos confirmados
 
 1. **Ollama** — estágio mais lento (~58 s)
-2. **Kokoro** — segundo maior (~19–84 s)
+2. **TTS** — segundo maior na época, Kokoro (~19–84 s); com o Edge TTS caiu para ~5–10 s e deixou de ser gargalo
 3. **GitHub API** — domina `/api/pulse` (~6 s)
 4. **SQLite** — dezenas de ms (irrelevante)
 
@@ -63,7 +63,7 @@ horas_economizadas  ≈ 8,5 h/mês do TL
 |---|----------|----------------|------------------|---------|
 | M1 | **Cache da coleta GitHub** (5–10 min) | Stress: 100% do tempo em HTTP GitHub | Reduz `/api/pulse` de ~6 s para <1 s em cache hit; p95 cai | Médio |
 | M2 | **LLM assíncrono / paralelo** | LLM ~58 s serial após coleta | Pipeline “texto pronto” em ~8 s; áudio em background | Médio |
-| M3 | **Modelo TTS em cache / Kokoro warm** | TTS variou 18–84 s | Total do pipeline mais estável (p95 menor) | Baixo |
+| M3 | **TTS estável** — concluído com Edge TTS | TTS variou 18–84 s com Kokoro → ~5–10 s | Total do pipeline mais estável (p95 menor) | Resolvido |
 | M4 | **Múltiplos repositórios + paginação** | Hoje 1 repo (`n8n-io/n8n`) | Escala para squad com 2–3 monorepos | Médio |
 | M5 | **Google Sheets no n8n** (entrega extra) | SQLite local não é multiusuário | PO/LP acessam histórico sem SSH na máquina | Baixo |
 | M6 | **Baseline de anomalias** (volume/CI) | Thresholds fixos hoje | Menos alerta falso; foco em desvio real | Alto |
