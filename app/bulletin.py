@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -17,6 +18,32 @@ def _alerts_dicts(alerts: list[Alert] | list[dict[str, Any]]) -> list[dict[str, 
     for a in alerts:
         out.append(a.model_dump() if hasattr(a, "model_dump") else dict(a))
     return out
+
+
+# Termos em inglês dentro do texto pt-BR — grafia fonética que o time pediu
+# para o Edge TTS (Antonio) ditar: CI → "si ai", AI → "ei ai", API → "ei pi ai",
+# GitHub → "guit rubi", DevOps → "devóps", IO → "ai ou", n8n → "ene eigth ene".
+_EN_PHONETIC = (
+    ("CI/CD", "si ai, si di"),
+    ("GitHub", "guit rubi"),
+    ("DevOps", "devóps"),
+    ("devops", "devóps"),
+    ("API", "ei pi ai"),
+)
+_EN_PHONETIC_RE = (
+    (re.compile(r"\bCI\b"), "si ai"),
+    (re.compile(r"\bAI\b"), "ei ai"),
+    (re.compile(r"\bIO\b"), "ai ou"),
+)
+
+
+def _speak_en(text: str) -> str:
+    """Aplica a fonética de termos ingleses (só o motor Edge; é idempotente)."""
+    for src, dst in _EN_PHONETIC:
+        text = text.replace(src, dst)
+    for rx, dst in _EN_PHONETIC_RE:
+        text = rx.sub(dst, text)
+    return text
 
 
 def format_bulletin(
@@ -71,12 +98,12 @@ def format_bulletin(
 
 def _spoken_repo(repository: str, kokoro: bool = False) -> str:
     r = repository or "repositório"
-    # n8n-io / n8n.io → fonética estável em pt-BR
-    r = r.replace("n8n-io", "ene oito ene ponto i o")
-    r = r.replace("N8N-IO", "ene oito ene ponto i o")
-    r = r.replace("n8n.io", "ene oito ene ponto i o")
-    r = r.replace("n8n", "ene oito ene")
-    r = r.replace("N8N", "ene oito ene")
+    # n8n-io / n8n.io → fonética estável em pt-BR (8 em inglês: "eigth")
+    r = r.replace("n8n-io", "ene eigth ene ponto ai ou")
+    r = r.replace("N8N-IO", "ene eigth ene ponto ai ou")
+    r = r.replace("n8n.io", "ene eigth ene ponto ai ou")
+    r = r.replace("n8n", "ene eigth ene")
+    r = r.replace("N8N", "ene eigth ene")
     r = r.replace("/", " barra ")
     r = r.replace("-", " ")
     return " ".join(r.split())
@@ -91,14 +118,15 @@ def _spoken_alert(text: str, kokoro: bool = False) -> str:
         ("pull requests", pr),
         ("pull request", pr),
         ("PRs", pr),
-        ("CI/CD", "integração contínua"),
         ("%", " por cento"),
         ("aberto(s)", "abertos"),
         ("fechado(s)", "fechados"),
-        ("n8n-io", "ene oito ene ponto i o"),
-        ("n8n", "ene oito ene"),
+        ("n8n-io", "ene eigth ene ponto ai ou"),
+        ("n8n", "ene eigth ene"),
     ]
     if kokoro:
+        # Edge mantém "CI/CD" intacto para _speak_en ditar "si ai, si di".
+        repl.append(("CI/CD", "integração contínua"))
         repl.append((" GitHub", " Guit-Hub"))
     for a, b in repl:
         t = t.replace(a, b)
@@ -143,7 +171,9 @@ def format_spoken_bulletin(
 ) -> str:
     """Versão falada do boletim.
 
-    engine='edge'  → termos técnicos naturais (Antonio neural).
+    engine='edge'  → termos técnicos naturais (Antonio neural) + fonética
+                     combinada de siglas/termos ingleses (CI → "si ai",
+                     AI → "ei ai", GitHub → "guit râbi").
     engine='kokoro' → fonética pt-BR reforçada (Kokoro local).
     """
     m = _metrics_dict(metrics)
@@ -200,4 +230,6 @@ def format_spoken_bulletin(
         f"{alert_text} "
         f"Fim do boletim."
     )
+    if not kokoro:
+        text = _speak_en(text)
     return text
