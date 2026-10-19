@@ -1,0 +1,12 @@
+{
+  "wa_status_badge": "WhatsApp não conectado",
+  "wa_status_detail": "estado: connecting — pareie pelo QR.",
+  "qr_rendered": true,
+  "fast_poll_connected": true,
+  "disconnect_restored": true,
+  "stress": {
+    "total_requests": 15,
+    "overall_success_rate": 100,
+    "endpoint": "/health"
+  }
+}

@@ -3,89 +3,25 @@
 Uso:
   python scripts/stress_test.py --requests 10
   python scripts/stress_test.py --requests 10,25,50,100 --endpoint /api/pulse
+
+A lógica de medição mora em app/stress.py (compartilhada com a ferramenta MCP
+run_stress_test); aqui ficam apenas a linha de comando e a gravação do relatório.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
-import statistics
-import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-import httpx
-
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(PROJECT_ROOT))  # permite `python scripts/stress_test.py`
+
+from app.stress import run_stress  # noqa: E402
+
 RESULTS_DIR = PROJECT_ROOT / "data" / "results"
-
-
-def percentile(values: list[float], pct: float) -> float:
-    if not values:
-        return 0.0
-    ordered = sorted(values)
-    k = (len(ordered) - 1) * (pct / 100.0)
-    floor = int(k)
-    ceil = min(floor + 1, len(ordered) - 1)
-    if floor == ceil:
-        return ordered[floor]
-    return ordered[floor] + (ordered[ceil] - ordered[floor]) * (k - floor)
-
-
-def one_request(base_url: str, endpoint: str, timeout: float) -> dict:
-    start = time.perf_counter()
-    try:
-        with httpx.Client(timeout=timeout) as client:
-            resp = client.get(f"{base_url.rstrip('/')}{endpoint}")
-        latency_ms = (time.perf_counter() - start) * 1000
-        return {
-            "ok": resp.status_code == 200,
-            "status_code": resp.status_code,
-            "latency_ms": latency_ms,
-            "error": None if resp.status_code == 200 else resp.text[:200],
-        }
-    except httpx.HTTPError as exc:
-        latency_ms = (time.perf_counter() - start) * 1000
-        return {
-            "ok": False,
-            "status_code": None,
-            "latency_ms": latency_ms,
-            "error": str(exc),
-        }
-
-
-def run_batch(n: int, base_url: str, endpoint: str, concurrency: int, timeout: float) -> dict:
-    results: list[dict] = []
-    wall_start = time.perf_counter()
-    with ThreadPoolExecutor(max_workers=concurrency) as pool:
-        futures = [
-            pool.submit(one_request, base_url, endpoint, timeout) for _ in range(n)
-        ]
-        for fut in as_completed(futures):
-            results.append(fut.result())
-    wall = time.perf_counter() - wall_start
-
-    latencies = [r["latency_ms"] for r in results if r["ok"]]
-    success = sum(1 for r in results if r["ok"])
-    errors = n - success
-
-    return {
-        "requests": n,
-        "concurrency": concurrency,
-        "endpoint": endpoint,
-        "success": success,
-        "errors": errors,
-        "success_rate": round((success / n) * 100, 2) if n else 0.0,
-        "total_time_s": round(wall, 3),
-        "average_latency_ms": round(statistics.mean(latencies), 2) if latencies else None,
-        "min_latency_ms": round(min(latencies), 2) if latencies else None,
-        "max_latency_ms": round(max(latencies), 2) if latencies else None,
-        "p50_latency_ms": round(percentile(latencies, 50), 2) if latencies else None,
-        "p95_latency_ms": round(percentile(latencies, 95), 2) if latencies else None,
-        "requests_per_second": round(n / wall, 2) if wall > 0 else None,
-        "sample_errors": [r["error"] for r in results if r["error"]][:3],
-    }
 
 
 def main() -> None:
@@ -97,18 +33,25 @@ def main() -> None:
     parser.add_argument("--timeout", type=float, default=30.0)
     args = parser.parse_args()
 
-    counts = [int(x.strip()) for x in args.requests.split(",") if x.strip()]
-    report: dict = {
-        "generated_at": datetime.now(timezone.utc).isoformat(),
-        "base_url": args.base_url,
-        "endpoint": args.endpoint,
-        "batches": [],
-    }
+    report_time = datetime.now(timezone.utc).isoformat()
+    try:
+        result = run_stress(
+            requests=args.requests,
+            concurrency=args.concurrency,
+            endpoint=args.endpoint,
+            base_url=args.base_url,
+            timeout_s=args.timeout,
+        )
+    except ValueError as exc:
+        print(f"Parâmetros inválidos: {exc}", file=sys.stderr)
+        raise SystemExit(2) from exc
 
-    for n in counts:
-        print(f"→ {n} requisições em {args.endpoint} (concorrência={args.concurrency})...")
-        batch = run_batch(n, args.base_url, args.endpoint, args.concurrency, args.timeout)
-        report["batches"].append(batch)
+    report = {"generated_at": report_time, **result}
+    for batch in report["batches"]:
+        print(
+            f"→ {batch['requests']} requisições em {batch['endpoint']} "
+            f"(concorrência={batch['concurrency']})..."
+        )
         print(
             f"  success={batch['success']}/{batch['requests']} "
             f"p95={batch['p95_latency_ms']}ms rps={batch['requests_per_second']}"

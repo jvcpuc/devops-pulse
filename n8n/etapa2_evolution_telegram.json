@@ -48,7 +48,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ ($env.WHATSAPP_API_URL || 'http://host.docker.internal:8080') + '/message/sendText/' + ($env.EVOLUTION_INSTANCE || 'devops-pulse') }}",
+        "url": "={{ ($env.WHATSAPP_API_URL || 'http://host.docker.internal:18080') + '/message/sendText/' + ($env.EVOLUTION_INSTANCE || 'devops-pulse') }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [

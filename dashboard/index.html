@@ -73,6 +73,11 @@
     .badge.partial { background: rgba(240, 180, 41, 0.15); color: var(--warn); }
     .badge.error { background: rgba(240, 113, 120, 0.15); color: var(--bad); }
     .badge.demo { background: rgba(61, 156, 240, 0.15); color: var(--accent); }
+    .badge.flash { animation: badge-flash 1s ease-in-out 3; }
+    @keyframes badge-flash {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.15); filter: brightness(1.7); }
+    }
     .row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
     @media (max-width: 800px) { .row { grid-template-columns: 1fr; } }
     .bar-wrap { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
@@ -103,6 +108,9 @@
     .mcp-result-title { font-weight: 600; font-size: 0.85rem; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
     .mcp-json { white-space: pre-wrap; word-break: break-word; max-height: 320px; overflow: auto; margin: 0; }
     .mcp-hint { color: var(--muted); font-size: 0.78rem; }
+    .wa-status { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 12px; }
+    .wa-status button { padding: 6px 12px; font-size: 0.8rem; }
+    .qr-expire { color: var(--warn); font-weight: 600; }
   </style>
 </head>
 <body>
@@ -194,9 +202,29 @@
       <button id="btn-mcp-prs" type="button">Consultar pull requests</button>
       <button id="btn-mcp-issues" type="button">Consultar issues</button>
       <button id="btn-mcp-health" type="button">Analisar saúde</button>
-      <button id="btn-mcp-full" type="button">Executar demonstração completa</button>
+      <button id="btn-mcp-stress" type="button">Teste de estresse</button>
+      <button id="btn-mcp-full" type="button">Executar demonstração completa (com WhatsApp)</button>
       <button id="btn-mcp-copy" type="button" class="secondary">Copiar resumo</button>
       <button id="btn-mcp-clear" type="button" class="secondary">Limpar resultados</button>
+    </div>
+    <div class="wa-status" role="status" aria-live="polite">
+      <span class="badge demo" id="wa-status-badge">verificando WhatsApp…</span>
+      <span class="mcp-hint" id="wa-status-detail"></span>
+      <button id="btn-wa-check" type="button" class="secondary">Verificar agora</button>
+      <button id="btn-wa-qr" type="button" class="secondary" hidden>Mostrar QR do WhatsApp</button>
+    </div>
+    <div id="wa-qr-area" class="mcp-result" hidden>
+      <div class="mcp-result-title">
+        <span class="mono">Pareamento WhatsApp (Evolution API)</span>
+      </div>
+      <p class="mcp-hint">
+        Abra o WhatsApp no celular → <strong>Aparelhos conectados</strong> →
+        <strong>Conectar aparelho</strong> → escaneie o QR abaixo.
+        <span class="qr-expire">O QR expira em ~20 segundos — escaneie rápido; se expirar, clique em “Atualizar QR”.</span>
+      </p>
+      <img id="wa-qr-img" alt="QR code do WhatsApp" style="max-width:260px;background:#fff;padding:8px;border-radius:8px;" />
+      <p class="mono" id="wa-pairing-code" style="font-size:1.1rem;letter-spacing:0.15em;"></p>
+      <p class="mcp-hint" id="wa-qr-msg"></p>
     </div>
     <div id="mcp-results" aria-live="polite"></div>
   </div>
@@ -450,6 +478,7 @@
       mcpBusy = busy;
       MCP_TOOLS.forEach(function (t) { el(t.btn).disabled = busy; });
       el("btn-mcp-full").disabled = busy;
+      el("btn-mcp-stress").disabled = busy;
     }
 
     function mcpArgs() {
@@ -522,6 +551,25 @@
       });
     });
 
+    // --- Teste de estresse (ferramenta MCP run_stress_test, com eco do resultado) ---
+    el("btn-mcp-stress").addEventListener("click", function () {
+      if (mcpBusy) return;
+      setMcpBusy(true);
+      setMcpStatus("processando (run_stress_test)", "partial");
+      mcpCallTool("run_stress_test", { requests: "5,10", concurrency: 3, endpoint: "/health" })
+        .then(function (data) {
+          appendMcpResult("run_stress_test → /health", data, false, "run_stress_test");
+          setMcpStatus("concluído", "success");
+        })
+        .catch(function (err) {
+          appendMcpResult("run_stress_test → erro", String(err && err.message ? err.message : err), true);
+          setMcpStatus("erro", "error");
+        })
+        .finally(function () { setMcpBusy(false); });
+    });
+
+    // --- Demonstração completa: as 5 ferramentas somente-leitura + pipeline
+    // completo via run_full_bulletin (LLM + áudio TTS + envio no WhatsApp com áudio). ---
     el("btn-mcp-full").addEventListener("click", function () {
       if (mcpBusy) return;
       setMcpBusy(true);
@@ -531,8 +579,149 @@
           try { await runMcpTool(MCP_TOOLS[i], mcpArgs()); }
           catch (_) { break; } // para no primeiro erro
         }
+        // Pipeline completo: executa tudo e envia o boletim no WhatsApp (+ áudio anexado).
+        const args = { hours: Number(el("mcp-hours").value), with_llm: true, with_tts: true, send_whatsapp: true };
+        const demoSel = el("mcp-demo").value;
+        if (demoSel !== "") args.demo = demoSel === "true";
+        setMcpStatus("processando (run_full_bulletin — LLM, TTS e WhatsApp…)", "partial");
+        try {
+          const data = await mcpCallTool("run_full_bulletin", args);
+          appendMcpResult("run_full_bulletin → pipeline completo", data, false, "run_full_bulletin");
+          setMcpStatus(
+            data.whatsapp && data.whatsapp.success ? "boletim enviado no WhatsApp" : "pipeline concluído (WhatsApp: ver detalhes)",
+            data.whatsapp && data.whatsapp.success ? "success" : "partial"
+          );
+        } catch (err) {
+          appendMcpResult("run_full_bulletin → erro", String(err && err.message ? err.message : err), true);
+          setMcpStatus("erro no pipeline completo", "error");
+        }
       })().finally(function () { setMcpBusy(false); });
     });
+
+    // --- WhatsApp: verificação em background + QR para parear ---
+    // Enquanto o pareamento está em aberto (área do QR visível) checamos a cada 5s,
+    // para refletir a conexão no celular sem precisar de F5; depois disso, a cada 30s.
+    let waPrevState = null;   // último estado visto (open | close | connecting | null)
+    let waTimer = null;
+    let waFastPoll = false;
+    let waFastRemaining = 30; // ~2,5 min de poll rápido por pareamento (evita 5s infinitos)
+
+    function waScheduleNext(delayMs) {
+      clearTimeout(waTimer);
+      waTimer = setTimeout(checkWhatsAppStatus, delayMs);
+    }
+
+    function waFlash() {
+      const badge = el("wa-status-badge");
+      badge.classList.add("flash");
+      setTimeout(function () { badge.classList.remove("flash"); }, 3200);
+    }
+
+    async function checkWhatsAppStatus() {
+      let st = null;
+      try {
+        const res = await fetch("http://127.0.0.1:8000/api/whatsapp/status", { cache: "no-store" });
+        st = await res.json();
+      } catch (err) {
+        el("wa-status-badge").textContent = "API indisponível";
+        el("wa-status-badge").className = "badge demo";
+        el("wa-status-detail").textContent = "Suba a API para verificar o WhatsApp.";
+        waScheduleNext(waFastPoll ? 5000 : 30000);
+        return;
+      }
+
+      const badge = el("wa-status-badge");
+      const detail = el("wa-status-detail");
+      const qrBtn = el("btn-wa-qr");
+      const area = el("wa-qr-area");
+      const state = st.state || null;
+      const wasReady = waPrevState === "open";
+
+      if (st.ready) {
+        const justConnected = waPrevState !== null && !wasReady;
+        badge.textContent = "WhatsApp conectado";
+        badge.className = "badge success";
+        qrBtn.hidden = true;
+        if (!area.hidden) {
+          // pareamento concluído: some com o QR e limpa a imagem
+          area.hidden = true;
+          el("wa-qr-img").removeAttribute("src");
+          el("wa-pairing-code").textContent = "";
+          el("wa-qr-msg").textContent = "";
+        }
+        detail.textContent = justConnected
+          ? "✅ Pareamento concluído! instância " + st.instance +
+            " pronta — o botão “completo” envia o boletim no WhatsApp."
+          : "instância " + st.instance + " pronta para receber o boletim.";
+        if (justConnected) waFlash();
+        waFastPoll = false;
+      } else if (!st.enabled) {
+        badge.textContent = "WhatsApp desativado";
+        badge.className = "badge demo";
+        detail.textContent = "Defina WHATSAPP_ENABLED=true no pulse.env e reinicie a API.";
+        qrBtn.hidden = true;
+        waFastPoll = false;
+      } else {
+        qrBtn.hidden = false;
+        if (waPrevState === "connecting" && state === "close") {
+          badge.textContent = "Conexão não completou";
+          badge.className = "badge demo";
+          detail.textContent = "O QR expirou antes do escaneamento — clique em “Mostrar QR” e escaneie rápido.";
+        } else if (wasReady) {
+          badge.textContent = "WhatsApp desconectado";
+          badge.className = "badge demo";
+          detail.textContent = "A sessão foi encerrada (outra sessão do WhatsApp Web? aparelho removido?) — pareie novamente pelo QR.";
+        } else {
+          badge.textContent = "WhatsApp não conectado";
+          badge.className = "badge demo";
+          detail.textContent = st.error || ("estado: " + (state || "desconhecido") + " — pareie pelo QR.");
+        }
+        // poll rápido apenas enquanto o QR estiver visível na tela (com teto de tempo)
+        waFastPoll = !area.hidden && waFastRemaining > 0;
+        if (waFastPoll) waFastRemaining -= 1;
+        qrBtn.textContent = area.hidden ? "Mostrar QR do WhatsApp" : "Atualizar QR";
+      }
+
+      waPrevState = state;
+      waScheduleNext(waFastPoll ? 5000 : 30000);
+    }
+
+    el("btn-wa-check").addEventListener("click", function () {
+      el("wa-status-badge").textContent = "verificando…";
+      el("wa-status-detail").textContent = "";
+      checkWhatsAppStatus();
+    });
+
+    el("btn-wa-qr").addEventListener("click", function () {
+      const area = el("wa-qr-area");
+      area.hidden = false;
+      el("btn-wa-qr").textContent = "Atualizar QR";
+      el("wa-qr-msg").textContent = "gerando QR…";
+      waFastPoll = true;          // a partir daqui, checa a cada 5s até parear
+      waFastRemaining = 30;       // reinicia o teto do poll rápido
+      clearTimeout(waTimer);
+      checkWhatsAppStatus();      // atualiza o badge em paralelo
+      area.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      fetch("http://127.0.0.1:8000/api/whatsapp/qr", { cache: "no-store" })
+        .then(function (res) {
+          if (!res.ok) return res.json().then(function (body) { throw new Error(body.detail || "QR indisponível"); });
+          return res.json();
+        })
+        .then(function (qr) {
+          el("wa-qr-img").src = qr.qr_base64;
+          el("wa-pairing-code").textContent = qr.pairing_code
+            ? "Código de pareamento: " + qr.pairing_code
+            : "";
+          el("wa-qr-msg").textContent = "QR gerado — a página passa a checar a cada 5s e some com o QR quando você conectar.";
+        })
+        .catch(function (err) {
+          el("wa-qr-img").removeAttribute("src");
+          el("wa-pairing-code").textContent = "";
+          el("wa-qr-msg").textContent = "Falha ao obter o QR: " + String(err && err.message ? err.message : err);
+        });
+    });
+
+    checkWhatsAppStatus();
 
     el("btn-mcp-copy").addEventListener("click", async function () {
       if (!mcpLastResults.length) {

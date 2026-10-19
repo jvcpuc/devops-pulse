@@ -9,7 +9,7 @@
 - [ ] `pip install -r requirements.txt` já executado (instala o SDK `mcp`).
 - [ ] `pulse.env` (ou `.env`) preenchido; para demonstração determinística use
       `DEMO_MODE=true` ou inicie com `.\scripts\start_demo.ps1 -ForceDemo`.
-- [ ] Executar `pytest -q` → esperado: **34 passed**.
+- [ ] Executar `pytest -q` → esperado: **42 passed**.
 - [ ] Se for usar um cliente de IA (ex.: Claude Code), configurar antes:
       `claude mcp add devops-pulse --transport http http://127.0.0.1:8000/mcp`
 - [ ] Fechar janelas/token que não devem aparecer em capturas.
@@ -43,9 +43,25 @@ curl http://127.0.0.1:8000/health
 6. Clique em **Consultar commits** (ou pull requests) — segunda ferramenta.
 7. Demonstre um erro compreensível: troque o owner para `..` e clique em
    Consultar métricas → aparece a mensagem de erro na área de resultados.
-8. **Executar demonstração completa** → as 5 ferramentas em sequência, sem
-   chamadas duplicadas.
-9. **Copiar resumo** → cola em um bloco de notas como evidência.
+8. **Teste de estresse** → roda a ferramenta `run_stress_test` (lotes de
+   requisições contra `/health`) e ecoa o relatório com latência p95,
+   sucesso e throughput por lote.
+9. **Executar demonstração completa (com WhatsApp)** → as 5 ferramentas em
+   sequência, sem chamadas duplicadas, e em seguida `run_full_bulletin`:
+   pipeline completo (LLM + áudio TTS + SQLite) com envio no WhatsApp
+   (texto + áudio anexado). Se o WhatsApp não estiver pareado, informa
+   claramente (sem enviar) e orienta a escanear o QR.
+10. **Copiar resumo** → cola em um bloco de notas como evidência.
+
+> **WhatsApp em background:** a página verifica sozinha o estado da Evolution
+> API (a cada 30 s; a cada **5 s** enquanto o QR está aberto, para refletir o
+> pareamento **sem F5**). Se o WhatsApp não estiver conectado, aparece o botão
+> **Mostrar QR do WhatsApp** — clique para exibir o QR de pareamento
+> (WhatsApp → Aparelhos conectados → Conectar aparelho; **o QR expira em
+> ~20 s**, use **Atualizar QR** se precisar de novo). Assim que você conecta,
+> o QR some sozinho e o selo vira "WhatsApp conectado" ✅. Há também o botão
+> **Verificar agora** para checar o estado na hora; se a sessão cair, a
+> página avisa ("WhatsApp desconectado") em vez de mentir.
 
 > Explique: os botões falam JSON-RPC com `/mcp` — a página é um cliente MCP.
 > A validação do protocolo, porém, é o próximo passo, com um cliente real.
@@ -73,6 +89,8 @@ listando e executando ferramentas.
 | "Como foi a atividade de commits?" | `get_commit_activity` | `total_commits` + `daily_series` |
 | "Quais pull requests estão pendentes?" | `get_pull_requests` com `state=open` | Itens com `state: open` |
 | "Que pontos merecem atenção?" | `analyze_repository_health` | `observations` com critérios e limites |
+| "Teste a resistência do serviço" | `run_stress_test` | `batches` com p95, sucesso e throughput |
+| "Execute o boletim completo e avise no WhatsApp" | `run_full_bulletin` | Pipeline completo + envio (texto + áudio) |
 | "E para um repositório inexistente?" | qualquer | Erro controlado (não crash) |
 
 Não pergunte sobre dados que as ferramentas não fornecem (ex.: qualidade de
@@ -87,5 +105,5 @@ código, segurança, dados de pessoas).
    botões em uso) e `evidence/mcp/*.json` (saídas reais já capturadas) —
    deixe claro que são evidências de uma execução anterior.
 3. **Cliente de IA indisponível:** rode a validação sem modelo:
-   `pytest tests\test_mcp_server.py -q` e mostre os 13 testes passando,
+   `pytest tests\test_mcp_server.py -q` e mostre os 18 testes passando,
    incluindo a conexão real do cliente oficial via Streamable HTTP e stdio.

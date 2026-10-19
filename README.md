@@ -93,7 +93,7 @@ Detalhes: [`ARCHITECTURE.md`](ARCHITECTURE.md) · Requisitos: [`docs/requisitos.
 devops-pulse/
 ├── app/                    # microsserviço FastAPI
 │   ├── main.py             # endpoints HTTP + servidor MCP montado em /mcp
-│   ├── mcp_server.py       # servidor MCP (5 ferramentas somente-leitura)
+│   ├── mcp_server.py       # servidor MCP (7 ferramentas: 5 somente-leitura + estresse/boletim)
 │   ├── pipeline.py         # coleta → métricas → LLM → TTS → persist
 │   ├── github_client.py    # API GitHub + retry (aceita repositório por chamada)
 │   ├── metrics.py          # indicadores
@@ -102,7 +102,7 @@ devops-pulse/
 │   ├── tts_client.py       # Kokoro
 │   ├── persistence.py      # SQLite
 │   └── ...
-├── tests/                  # 34 testes (pytest) — inclui suíte MCP
+├── tests/                  # 42 testes (pytest) — inclui suíte MCP
 ├── n8n/                    # workflows importáveis
 ├── dashboard/              # HTML do boletim visual + seção "Demonstração MCP"
 ├── scripts/                # stress test, relatório, start_services, start_demo
@@ -154,6 +154,8 @@ pip install -r requirements.txt
 | GET | `/api/pulse?hours=24` | Coleta + métricas + alertas |
 | POST | `/api/pipeline/run` | Pipeline completo (`with_llm`, `with_tts`, `persist`) |
 | GET | `/api/executions` | Histórico SQLite |
+| GET | `/api/whatsapp/status` | Estado da Evolution API/WhatsApp (usado pelo dashboard) |
+| GET | `/api/whatsapp/qr` | QR de pareamento + pairing code (cria a instância se preciso) |
 | POST | `/mcp` | **Servidor MCP** (Streamable HTTP, JSON-RPC) |
 
 ```powershell
@@ -174,7 +176,7 @@ python -m app --live       # ignora DEMO_MODE
 
 ```powershell
 pytest -q
-# 34 passed (21 originais + 13 do servidor MCP)
+# 42 passed (21 originais + 18 de MCP + 3 de WhatsApp)
 ```
 
 ### Stress test
@@ -206,17 +208,19 @@ Abra `dashboard/index.html` no navegador. Ele carrega `http://127.0.0.1:8000/api
 | Streamable HTTP | `http://127.0.0.1:8000/mcp` | Página do dashboard e clientes MCP remotos locais |
 | stdio | `python -m app.mcp_server` | Clientes que iniciam o servidor como subproceso (ex.: Claude Desktop) |
 
-**Ferramentas disponíveis** (todas somente leitura):
+**Ferramentas disponíveis** — 5 somente-leitura + 2 com efeitos laterais declarados:
 
-| Ferramenta | Parâmetros | Retorna |
-|------------|-----------|---------|
-| `get_repository_metrics` | `owner`, `repo`, `hours` (1–168), `demo` | Métricas gerais + alertas do período |
-| `get_commit_activity` | `owner`, `repo`, `hours`, `demo` | Total, série diária e amostra de commits |
-| `get_pull_requests` | `owner`, `repo`, `state` (open/closed/all), `limit`, `demo` | Lista de PRs com estado e datas |
-| `get_issues` | `owner`, `repo`, `state`, `limit`, `demo` | Issues reais (PRs excluídos) |
-| `analyze_repository_health` | `owner`, `repo`, `hours`, `demo` | Observações explicáveis com critérios e limitações |
+| Ferramenta | Parâmetros | Retorna | Efeito |
+|------------|-----------|---------|--------|
+| `get_repository_metrics` | `owner`, `repo`, `hours` (1–168), `demo` | Métricas gerais + alertas do período | somente leitura |
+| `get_commit_activity` | `owner`, `repo`, `hours`, `demo` | Total, série diária e amostra de commits | somente leitura |
+| `get_pull_requests` | `owner`, `repo`, `state` (open/closed/all), `limit`, `demo` | Lista de PRs com estado e datas | somente leitura |
+| `get_issues` | `owner`, `repo`, `state`, `limit`, `demo` | Issues reais (PRs excluídos) | somente leitura |
+| `analyze_repository_health` | `owner`, `repo`, `hours`, `demo` | Observações explicáveis com critérios e limitações | somente leitura |
+| `run_stress_test` | `requests` (ex. `5,10`, máx. 150), `concurrency` (1–20), `endpoint` (`/health`, `/api/pulse`), `timeout_s` | Latência (média/p50/p95), sucesso e throughput por lote | **gera carga** no endpoint local |
+| `run_full_bulletin` | `hours`, `with_llm`, `with_tts`, `send_whatsapp`, `demo` | Pipeline completo: métricas, resumo LLM, boletim, áudio, tempos | **LLM + TTS + SQLite + envio no WhatsApp** (texto + áudio anexado) |
 
-`demo`: `true` força dados fictícios rotulados; `false` força o GitHub real; omitido usa o `DEMO_MODE` do servidor. Todo resultado traz `data_source` — **nunca apresente `demo` como produção**.
+`demo`: `true` força dados fictícios rotulados; `false` força o GitHub real; omitido usa o `DEMO_MODE` do servidor. Todo resultado traz `data_source` — **nunca apresente `demo` como produção**. `run_full_bulletin` verifica a conexão do WhatsApp **antes** de rodar: se a instância não estiver pareada, executa o pipeline e informa (sem enviar), com instrução para escanear o QR no dashboard.
 
 **Configurar um cliente MCP** (ex.: Claude Code):
 
@@ -242,9 +246,9 @@ Exemplo de `claude_desktop_config.json` (stdio):
 }
 ```
 
-**Botões da página:** a seção "Demonstração MCP" do dashboard atua como um **cliente MCP real** — os botões enviam JSON-RPC (o protocolo de verdade) para `/mcp`, com estados aguardando/processando/concluído/erro, repositório e período selecionáveis, demonstração completa sequencial, copiar resumo e limpar. Detalhes e roteiro: [`docs/mcp-demo.md`](docs/mcp-demo.md) · Relatório técnico: [`docs/mcp-relatorio.md`](docs/mcp-relatorio.md)
+**Botões da página:** a seção "Demonstração MCP" do dashboard atua como um **cliente MCP real** — os botões enviam JSON-RPC (o protocolo de verdade) para `/mcp`, com estados aguardando/processando/concluído/erro, repositório e período selecionáveis. Inclui **Teste de estresse** (com eco do relatório na página), **Executar demonstração completa (com WhatsApp)** — as 5 ferramentas + `run_full_bulletin` (texto + áudio no WhatsApp) —, copiar resumo e limpar. A página ainda verifica **em background** o estado da Evolution API: se o WhatsApp não estiver conectado, exibe o botão **Mostrar QR do WhatsApp** com o QR de pareamento — e, com o QR aberto, passa a checar **a cada 5 s**, refletindo o pareamento **sem F5** (o QR some sozinho e o selo vira "conectado"; há também **Verificar agora**/**Atualizar QR**). Detalhes e roteiro: [`docs/mcp-demo.md`](docs/mcp-demo.md) · Relatório técnico: [`docs/mcp-relatorio.md`](docs/mcp-relatorio.md)
 
-**Segurança:** ferramentas somente leitura; validação de `owner`/`repo` (sem caminhos, URLs ou comandos); sem execução de shell; token do GitHub nunca sai do servidor nem aparece em logs/erros; servidor aceita apenas hosts/origens locais (proteção anti DNS-rebinding).
+**Segurança:** 5 ferramentas somente leitura e 2 com efeitos laterais explícitos na descrição; validação de `owner`/`repo` (sem caminhos, URLs ou comandos); estresse restrito a endpoints locais whitelisted (sem URL arbitrária) com teto de 150 requisições; sem execução de shell; token do GitHub nunca sai do servidor nem aparece em logs/erros; servidor aceita apenas hosts/origens locais (proteção anti DNS-rebinding).
 
 ### n8n
 

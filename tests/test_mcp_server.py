@@ -35,6 +35,8 @@ EXPECTED_TOOLS = {
     "get_pull_requests",
     "get_issues",
     "analyze_repository_health",
+    "run_stress_test",
+    "run_full_bulletin",
 }
 
 
@@ -146,6 +148,126 @@ async def test_analyze_repository_health_demo():
         # Sem índice arbitrário: cada critério vem com limiar e limitações documentadas.
         assert data["limitations"]
         assert "metrics" in data and "alerts" in data
+
+
+# ---------------------------------------------------------------------------
+# Ferramentas com efeitos laterais: run_stress_test e run_full_bulletin
+# ---------------------------------------------------------------------------
+
+
+def test_app_stress_against_real_server(live_server):
+    """Núcleo compartilhado (app.stress) mede um servidor HTTP real de ponta a ponta."""
+    from app.stress import run_stress
+
+    base = live_server.rsplit("/mcp", 1)[0]
+    report = run_stress(
+        requests="2,3", concurrency=2, endpoint="/health", base_url=base, timeout_s=10.0
+    )
+    assert report["endpoint"] == "/health"
+    assert report["total_requests"] == 5
+    assert report["total_success"] == 5
+    assert report["overall_success_rate"] == 100.0
+    batch = report["batches"][0]
+    assert batch["requests"] == 2
+    assert batch["concurrency"] == 2
+    assert batch["p95_latency_ms"] is not None and batch["p95_latency_ms"] >= 0
+    assert batch["requests_per_second"] > 0
+    assert batch["sample_errors"] == []
+
+
+def test_stress_validation_rejects_non_whitelisted_target():
+    """Somente endpoints locais whitelisted e base localhost (nada de URL arbitrária)."""
+    from app.stress import parse_requests, validate_target
+
+    with pytest.raises(ValueError, match="não permitido"):
+        validate_target("/etc/passwd")
+    with pytest.raises(ValueError, match="base_url"):
+        validate_target("/health", "http://exemplo.com")
+    with pytest.raises(ValueError, match="1 e 50"):
+        parse_requests("51")
+    with pytest.raises(ValueError, match="3 lotes"):
+        parse_requests("1,2,3,4")
+    assert parse_requests("5,10") == [5, 10]
+
+
+@pytest.mark.asyncio
+async def test_run_stress_test_tool_wiring(monkeypatch):
+    """A ferramenta MCP repassa parâmetros validados e devolve o relatório."""
+    captured: dict[str, Any] = {}
+
+    def fake_run_stress(**kwargs):
+        captured.update(kwargs)
+        return {
+            "base_url": "http://127.0.0.1:8000",
+            "endpoint": kwargs.get("endpoint"),
+            "concurrency": kwargs.get("concurrency"),
+            "batches": [],
+            "total_requests": 5,
+            "total_success": 5,
+            "overall_success_rate": 100.0,
+        }
+
+    monkeypatch.setattr("app.mcp_server.run_stress", fake_run_stress)
+    async with Client(mcp_server) as client:
+        result = await client.call_tool(
+            "run_stress_test",
+            {"requests": "2,3", "concurrency": 2, "endpoint": "/health"},
+        )
+        assert not result.is_error, _error_text(result)
+        data = _tool_json(result)
+        assert data["tool"] == "run_stress_test"
+        assert data["overall_success_rate"] == 100.0
+        assert data["notes"]
+        assert captured["requests"] == "2,3"
+        assert captured["concurrency"] == 2
+        assert captured["endpoint"] == "/health"
+
+        # Endpoint fora da whitelist → erro controlado.
+        bad = await client.call_tool("run_stress_test", {"endpoint": "/admin"})
+        assert bad.is_error
+
+
+@pytest.mark.asyncio
+async def test_run_full_bulletin_demo_no_side_effects():
+    """Pipeline completo em modo demo, sem LLM/TTS/WhatsApp: só dados + SQLite."""
+    async with Client(mcp_server) as client:
+        result = await client.call_tool(
+            "run_full_bulletin",
+            {
+                "hours": 24,
+                "with_llm": False,
+                "with_tts": False,
+                "send_whatsapp": False,
+                "demo": True,
+            },
+        )
+        assert not result.is_error, _error_text(result)
+        data = _tool_json(result)
+        assert data["tool"] == "run_full_bulletin"
+        assert data["data_source"] == "demo"
+        assert data["execution_id"].startswith("PULSE-")
+        assert data["status"] in {"success", "partial"}
+        assert data["metrics"]["commits"] >= 0
+        assert isinstance(data["alerts"], list)
+        assert data["bulletin"] and "PULSE" in data["bulletin"]
+        # Sem envio: WhatsApp nulo e nota explícita.
+        assert data["whatsapp"] is None
+        assert "send_whatsapp=false" in data["audio_note"]
+        assert "DADOS DEMO" in data["audio_note"]
+        assert data["timings_ms"]["total_pipeline_latency_ms"] >= 0
+
+
+@pytest.mark.asyncio
+async def test_run_full_bulletin_whatsapp_disabled_is_clear():
+    """send_whatsapp=true com WhatsApp desligado → mensagem clara, sem tentativa de rede."""
+    async with Client(mcp_server) as client:
+        result = await client.call_tool(
+            "run_full_bulletin",
+            {"with_llm": False, "with_tts": False, "send_whatsapp": True, "demo": True},
+        )
+        assert not result.is_error, _error_text(result)
+        data = _tool_json(result)
+        assert "WHATSAPP_ENABLED=false" in data["audio_note"]
 
 
 # ---------------------------------------------------------------------------

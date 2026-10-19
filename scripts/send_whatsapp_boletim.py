@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 EV = ROOT / "evidence"
 GROUP = "120363412036540372@g.us"
 APIKEY = "devops-pulse-evolution-key-2026"
-BASE = "http://127.0.0.1:8080"
+BASE = "http://127.0.0.1:18080"
 
 
 def get_json(url: str) -> dict:

@@ -67,7 +67,7 @@ class Settings(BaseSettings):
     # WhatsApp / Evolution API
     whatsapp_enabled: bool = False
     whatsapp_provider: str = "evolution"
-    whatsapp_api_url: str = "http://127.0.0.1:8080"
+    whatsapp_api_url: str = "http://127.0.0.1:18080"
     whatsapp_token: str = ""
     whatsapp_to: str = ""
     whatsapp_group: str = ""

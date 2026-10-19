@@ -50,6 +50,7 @@ class PulsePipeline:
         with_tts: bool = True,
         persist: bool = True,
         use_demo: bool | None = None,
+        send_whatsapp: bool = True,
     ) -> PulseResponse:
         started = time.perf_counter()
         now = datetime.now(timezone.utc)
@@ -288,8 +289,9 @@ class PulsePipeline:
                     duration_ms=persistence_ms,
                 )
 
-        # WhatsApp automático (mesmo texto do boletim) após gravar no SQLite
-        if self.settings.whatsapp_enabled and bulletin:
+        # WhatsApp automático (mesmo texto do boletim) após gravar no SQLite.
+        # send_whatsapp=False permite executar o pipeline sem disparar envios.
+        if send_whatsapp and self.settings.whatsapp_enabled and bulletin:
             log_event(logger, execution_id=execution_id, stage="whatsapp", status="WHATSAPP_STARTED")
             t = time.perf_counter()
             ok_wa, whatsapp_meta = self.whatsapp.send_text(bulletin)

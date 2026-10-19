@@ -106,7 +106,7 @@ def whatsapp_evidence():
     if p.exists():
         send = json.loads(p.read_text(encoding="utf-8-sig", errors="replace"))
     lines = [
-        ("dim", "PS> Invoke-RestMethod http://127.0.0.1:8080/instance/connectionState/devops-pulse"),
+        ("dim", "PS> Invoke-RestMethod http://127.0.0.1:18080/instance/connectionState/devops-pulse"),
         ("green", "state = open  (WhatsApp pareado)"),
         ("dim", ""),
         ("dim", "PS> POST /message/sendText/devops-pulse  { number: '...@g.us', text: '[DevOps Pulse AI] ...' }"),
@@ -132,7 +132,7 @@ def whatsapp_evidence():
     if "instanceName" not in inst and isinstance(inst.get("instance"), dict):
         inst = {**inst, **inst["instance"]}
     lines_i = [
-        ("dim", "PS> Invoke-RestMethod http://127.0.0.1:8080/instance/fetchInstances -Headers @{apikey='***'}"),
+        ("dim", "PS> Invoke-RestMethod http://127.0.0.1:18080/instance/fetchInstances -Headers @{apikey='***'}"),
         ("dim", "PS> GET /instance/connectionState/devops-pulse"),
         ("green", f"instance          = {inst.get('name') or inst.get('instanceName') or 'devops-pulse'}"),
         ("green", f"connectionState   = {inst.get('connectionStatus') or inst.get('state') or 'open'}"),

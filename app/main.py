@@ -28,6 +28,7 @@ from app.metrics import compute_metrics
 from app.persistence import Persistence
 from app.pipeline import PulsePipeline, new_execution_id
 from app.schemas import Period, PulseResponse, StageTimings
+from app.whatsapp_client import WhatsAppClient
 from datetime import datetime, timedelta, timezone
 import time
 
@@ -146,3 +147,28 @@ def api_pipeline_run(
 def api_executions(limit: int = Query(20, ge=1, le=200)) -> dict[str, Any]:
     store = Persistence(settings)
     return {"items": store.list_recent(limit=limit)}
+
+
+@app.get("/api/whatsapp/status")
+def api_whatsapp_status() -> dict[str, Any]:
+    """Estado da conexão WhatsApp (Evolution API) — usado pelo dashboard."""
+    client = WhatsAppClient(settings)
+    ok, meta = client.connection_state()
+    return {
+        "enabled": settings.whatsapp_enabled,
+        "instance": client.instance,
+        "evolution_url": client.base_url,
+        "ready": bool(ok and meta.get("connected")),
+        "ok": ok,
+        **meta,
+    }
+
+
+@app.get("/api/whatsapp/qr")
+def api_whatsapp_qr() -> dict[str, Any]:
+    """QR code (base64) + pairing code para parear o WhatsApp pela página."""
+    client = WhatsAppClient(settings)
+    ok, meta = client.fetch_qr()
+    if not ok:
+        raise HTTPException(status_code=502, detail=meta.get("error", "QR indisponível"))
+    return meta

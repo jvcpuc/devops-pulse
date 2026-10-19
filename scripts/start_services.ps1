@@ -61,9 +61,9 @@ if ($evo -ne "evolution-api") {
         Write-Host "  docker-compose.evolution.yml não encontrado" -ForegroundColor Yellow
     }
 } else {
-    Write-Host "  evolution-api já ativo em http://localhost:8080"
+    Write-Host "  evolution-api já ativo em http://localhost:18080"
 }
-Write-Host "  Manager/QR: http://localhost:8080  |  apikey: devops-pulse-evolution-key-2026"
+Write-Host "  Manager/QR: http://localhost:18080  |  apikey: devops-pulse-evolution-key-2026"
 
 Write-Host "== Microsserviço ==" -ForegroundColor Cyan
 $root = Split-Path -Parent $PSScriptRoot
@@ -98,16 +98,38 @@ if (Test-Path $py) {
 }
 
 Write-Host "`nHealth checks:" -ForegroundColor Cyan
+# Espera de até 30s por serviço: containers recém-iniciados levam alguns segundos
+# para servir HTTP (n8n ~10-30s, kokoro warmup ~15s) — sem isso o check falha falso.
+$deadlineSeconds = 30
+$intervalSeconds = 5
 foreach ($svc in @(
-    @{n="ollama"; u="http://127.0.0.1:11434/api/tags"},
-    @{n="kokoro"; u="http://127.0.0.1:8880/health"},
-    @{n="n8n"; u="http://127.0.0.1:5678/healthz"},
-    @{n="evolution"; u="http://127.0.0.1:8080/"}
+    @{n="ollama"; u="http://127.0.0.1:11434/api/tags"; want=$null},
+    @{n="kokoro"; u="http://127.0.0.1:8880/health"; want=$null},
+    @{n="n8n"; u="http://127.0.0.1:5678/healthz"; want=$null},
+    # Check real da Evolution API (o / raiz pode ser de outro serviço na porta 8080):
+    @{n="evolution"; u="http://127.0.0.1:18080/instance/fetchInstances"; want="devops-pulse-evolution-key-2026"}
 )) {
-    try {
-        Invoke-RestMethod $svc.u -TimeoutSec 5 | Out-Null
+    $ok = $false
+    $elapsed = 0
+    $lastError = ""
+    while ($elapsed -le $deadlineSeconds) {
+        try {
+            if ($svc.want) {
+                $r = Invoke-WebRequest $svc.u -Headers @{ apikey = $svc.want } -TimeoutSec 5 -UseBasicParsing
+            } else {
+                $r = Invoke-WebRequest $svc.u -TimeoutSec 5 -UseBasicParsing
+            }
+            if ($r.StatusCode -ge 200 -and $r.StatusCode -lt 500) { $ok = $true; break }
+        } catch {
+            $lastError = $_.Exception.Message
+        }
+        Start-Sleep -Seconds $intervalSeconds
+        $elapsed += $intervalSeconds
+    }
+    if ($ok) {
         Write-Host "  [$($svc.n)] OK"
-    } catch {
-        Write-Host "  [$($svc.n)] FALHOU" -ForegroundColor Yellow
+    } else {
+        $detail = if ($lastError) { " — $lastError" } else { "" }
+        Write-Host "  [$($svc.n)] FALHOU (sem resposta em ${deadlineSeconds}s)$detail" -ForegroundColor Yellow
     }
 }

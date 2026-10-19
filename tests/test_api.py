@@ -58,3 +58,65 @@ def test_executions_endpoint():
     resp = client.get("/api/executions?limit=5")
     assert resp.status_code == 200
     assert "items" in resp.json()
+
+
+def test_whatsapp_status_endpoint_without_evolution(monkeypatch):
+    """Evolution indisponível → status 200 com erro controlado (não 500)."""
+    import app.main as main_mod
+
+    def fake_down(self):
+        return False, {"ok": False, "connected": False, "error": "connection refused"}
+
+    monkeypatch.setattr(main_mod.WhatsAppClient, "connection_state", fake_down)
+    resp = client.get("/api/whatsapp/status")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert set(["enabled", "ready", "ok", "instance", "evolution_url"]) <= set(data)
+    # Evolution fora do ar: ok=False e erro presente; ready nunca vira True.
+    assert data["ready"] is False
+    assert data["ok"] is False
+    assert data["error"]
+
+
+def test_whatsapp_status_reports_connected(monkeypatch):
+    """Quando a instância está 'open', o status marca ready=true."""
+    import app.main as main_mod
+
+    def fake_state(self):
+        return True, {"ok": True, "connected": True, "state": "open", "instance": self.instance}
+
+    monkeypatch.setattr(main_mod.WhatsAppClient, "connection_state", fake_state)
+    resp = client.get("/api/whatsapp/status")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["ready"] is True
+    assert data["state"] == "open"
+
+
+def test_whatsapp_qr_endpoint(monkeypatch):
+    """QR indisponível → 502 com detalhe; disponível → base64 + pairing code."""
+    import app.main as main_mod
+
+    def fake_unavailable(self):
+        return False, {"success": False, "error": "Evolution API fora do ar"}
+
+    monkeypatch.setattr(main_mod.WhatsAppClient, "fetch_qr", fake_unavailable)
+    resp = client.get("/api/whatsapp/qr")
+    assert resp.status_code == 502
+    assert "Evolution API fora do ar" in resp.json()["detail"]
+
+    def fake_ok(self):
+        return True, {
+            "success": True,
+            "qr_base64": "data:image/png;base64,dGVzdGU=",
+            "pairing_code": "ABCD-EFGH",
+            "instance": "devops-pulse",
+            "manager_url": "http://127.0.0.1:18080",
+        }
+
+    monkeypatch.setattr(main_mod.WhatsAppClient, "fetch_qr", fake_ok)
+    resp = client.get("/api/whatsapp/qr")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["qr_base64"].startswith("data:image/")
+    assert data["pairing_code"] == "ABCD-EFGH"

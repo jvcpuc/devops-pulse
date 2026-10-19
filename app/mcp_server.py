@@ -42,6 +42,9 @@ from app.demo_data import build_demo_raw
 from app.github_client import GitHubAPIError, GitHubClient
 from app.logging_config import get_logger, setup_logging
 from app.metrics import compute_metrics
+from app.pipeline import PulsePipeline
+from app.stress import run_stress
+from app.whatsapp_client import WhatsAppClient
 
 logger = get_logger(__name__)
 
@@ -58,12 +61,15 @@ mcp = MCPServer(
         "calculadas pelo projeto DevOps Pulse AI. Somente leitura."
     ),
     instructions=(
-        "Servidor MCP somente-leitura do DevOps Pulse AI. Use get_repository_metrics "
-        "para a visão geral do período e as demais ferramentas para detalhar commits, "
-        "pull requests, issues e atividade/manutenção. Todos os resultados trazem "
-        "'data_source': quando for 'demo', os números são fictícios de demonstração e "
-        "não devem ser apresentados como dados reais do GitHub. Ferramentas não alteram "
-        "o GitHub."
+        "Servidor MCP do DevOps Pulse AI. As ferramentas get_repository_metrics, "
+        "get_commit_activity, get_pull_requests, get_issues e analyze_repository_health "
+        "são somente-leitura. Todos os resultados trazem 'data_source': quando for "
+        "'demo', os números são fictícios de demonstração e não devem ser apresentados "
+        "como dados reais do GitHub. Duas ferramentas têm efeitos laterais e devem ser "
+        "usadas com consentimento do usuário: run_stress_test dispara carga controlada "
+        "contra os endpoints locais do próprio microsserviço; run_full_bulletin executa "
+        "o pipeline completo (LLM, áudio TTS e persistência) e ENVIA o boletim no "
+        "WhatsApp configurado, anexando o áudio quando disponível."
     ),
     version=__version__,
 )
@@ -493,6 +499,196 @@ def analyze_repository_health(
         "seu limiar configurado.",
         "Período limitado à janela informada (máx. 168 h) e à primeira página da API.",
     ]
+    return payload
+
+
+StressParam = Annotated[
+    str,
+    Field(
+        description=(
+            "Lotes de requisições separados por vírgula (ex.: '5,10'). Máximo 3 lotes "
+            "de até 50 requisições cada."
+        )
+    ),
+]
+ConcurrencyParam = Annotated[
+    int,
+    Field(ge=1, le=20, description="Requisições simultâneas por lote (padrão 3, máximo 20)."),
+]
+StressEndpointParam = Annotated[
+    Literal["/health", "/api/pulse"],
+    Field(
+        description=(
+            "Endpoint local a medir (GET). '/health' é leve e mede o overhead da API; "
+            "'/api/pulse' roda coleta+métricas a cada requisição (mais pesado)."
+        )
+    ),
+]
+
+
+@mcp.tool(
+    name="run_stress_test",
+    description=(
+        "Executa um teste de estresse controlado contra os endpoints LOCAIS do próprio "
+        "DevOps Pulse AI (/health ou /api/pulse) e retorna latência "
+        "(média/mín/máx/p50/p95), taxa de sucesso e throughput por lote. Efeito lateral: "
+        "gera carga real no microsserviço local — use com moderação. Limitado a 150 "
+        "requisições por chamada e apenas endpoints locais whitelisted."
+    ),
+)
+def run_stress_test(
+    requests: StressParam = "5,10",
+    concurrency: ConcurrencyParam = 3,
+    endpoint: StressEndpointParam = "/health",
+    timeout_s: Annotated[
+        float, Field(ge=1, le=60, description="Timeout por requisição em segundos (padrão 30).")
+    ] = 30.0,
+) -> dict[str, Any]:
+    """Teste de estresse do microsserviço local (reutiliza app/stress.py)."""
+    try:
+        report = run_stress(
+            requests=requests,
+            concurrency=concurrency,
+            endpoint=endpoint,
+            timeout_s=timeout_s,
+        )
+    except ValueError as exc:
+        raise ToolError(str(exc)) from exc
+
+    report["tool"] = "run_stress_test"
+    report["notes"] = [
+        "Carga aplicada ao microsserviço local em execução (a API que hospeda o MCP "
+        "deve estar ativa — mesma máquina/porta 8000).",
+        "Latências medidas do lado do cliente HTTP; incluem o tempo de resposta real "
+        "do endpoint escolhido.",
+    ]
+    return report
+
+
+@mcp.tool(
+    name="run_full_bulletin",
+    description=(
+        "Executa o pipeline COMPLETO do DevOps Pulse AI (coleta → métricas → alertas → "
+        "resumo com LLM local → boletim → áudio TTS → persistência no SQLite) e envia o "
+        "boletim formatado no WhatsApp configurado, anexando o áudio do boletim quando "
+        "disponível. ATENÇÃO: tem efeitos reais — consome Ollama/Kokoro locais, grava no "
+        "banco e ENVIA mensagem no WhatsApp (WHATSAPP_TO). Use send_whatsapp=false para "
+        "apenas executar o pipeline sem enviar."
+    ),
+)
+def run_full_bulletin(
+    hours: HoursParam = 24,
+    with_llm: Annotated[
+        bool, Field(description="Gerar resumo com o LLM local (Ollama). Padrão true.")
+    ] = True,
+    with_tts: Annotated[
+        bool, Field(description="Gerar áudio do boletim (Kokoro/Edge). Padrão true.")
+    ] = True,
+    send_whatsapp: Annotated[
+        bool,
+        Field(description="Enviar o boletim no WhatsApp configurado (texto + áudio). Padrão true."),
+    ] = True,
+    demo: DemoParam = None,
+) -> dict[str, Any]:
+    """Pipeline completo + envio WhatsApp com áudio (efeitos laterais reais)."""
+    settings = get_settings()
+
+    # Pré-checagem da conexão: sem instância "open" o envio do pipeline falharia
+    # com timeout (20s) — aqui falha rápido e com instrução clara de pareamento.
+    wa = WhatsAppClient(settings)
+    whatsapp_connected = False
+    whatsapp_skip_reason: str | None = None
+    if send_whatsapp and settings.whatsapp_enabled:
+        conn_ok, conn = wa.connection_state()
+        if not conn_ok or not conn.get("connected"):
+            state = conn.get("state", "desconhecido")
+            whatsapp_skip_reason = (
+                f"WhatsApp NÃO conectado (estado: '{state}') — pipeline executado, "
+                "mas NADA foi enviado. Clique em 'Mostrar QR do WhatsApp' no dashboard, "
+                "escaneie o QR no celular e execute novamente para enviar."
+            )
+            send_whatsapp = False  # evita o timeout de 20s dentro do pipeline
+
+    pipeline = PulsePipeline(settings)
+    try:
+        pulse = pipeline.run(
+            hours=hours,
+            with_llm=with_llm,
+            with_tts=with_tts,
+            persist=True,
+            use_demo=demo,
+            send_whatsapp=send_whatsapp,
+        )
+    except Exception as exc:  # noqa: BLE001 — erro controlado para o cliente MCP
+        logger.exception("Falha no pipeline completo via MCP")
+        raise ToolError(f"Falha ao executar o pipeline completo: {exc}") from exc
+
+    audio_meta: dict[str, Any] | None = None
+    if whatsapp_skip_reason:
+        audio_note = whatsapp_skip_reason
+        pulse.errors.append(
+            f"WHATSAPP_NOT_CONNECTED: instância '{settings.evolution_instance}' "
+            f"não está conectada — envio pendente de pareamento."
+        )
+    elif not send_whatsapp:
+        audio_note = "Envio no WhatsApp pulado (send_whatsapp=false)."
+    elif not settings.whatsapp_enabled:
+        audio_note = (
+            "WHATSAPP_ENABLED=false — nenhum envio realizado (configure pulse.env e reinicie a API)."
+        )
+    elif pulse.audio_path:
+        # O pipeline já enviou o texto do boletim; aqui anexamos o áudio.
+        ok_audio, audio_meta = wa.send_audio(
+            pulse.audio_path, caption="Áudio do boletim DevOps Pulse AI"
+        )
+        if not ok_audio:
+            pulse.errors.append(
+                f"WHATSAPP_AUDIO_ERROR: {audio_meta.get('error', 'desconhecido')}"
+            )
+            audio_note = f"Áudio não enviado: {audio_meta.get('error', 'desconhecido')}"
+        else:
+            audio_note = f"Áudio anexado: {audio_meta.get('file')}"
+    else:
+        audio_note = "Sem áudio disponível para anexar (TTS desabilitado ou falhou)."
+
+    if pulse.data_source == "demo":
+        audio_note = ((audio_note or "") + " | DADOS DEMO (não são reais).").strip(" |")
+
+    # Status honesto: se o envio no WhatsApp foi pulado/falhou, o pipeline
+    # pediu "completo" mas não entregou o envio — marca como parcial.
+    if send_whatsapp is False and whatsapp_skip_reason and pulse.status == "success":
+        pulse.status = "partial"
+
+    payload: dict[str, Any] = {
+        "tool": "run_full_bulletin",
+        "status": pulse.status,
+        "execution_id": pulse.execution_id,
+        "repository": pulse.repository,
+        "data_source": pulse.data_source,
+        "queried_at": pulse.generated_at,
+        "period": {
+            "from": pulse.period.from_.isoformat() if pulse.period else None,
+            "to": pulse.period.to.isoformat() if pulse.period else None,
+        },
+        "metrics": pulse.metrics.as_dict(),
+        "alerts": [a.model_dump() for a in pulse.alerts],
+        "summary_llm": pulse.summary,
+        "bulletin": pulse.bulletin,
+        "audio_path": pulse.audio_path,
+        "whatsapp": pulse.whatsapp,
+        "whatsapp_audio": audio_meta,
+        "audio_note": audio_note,
+        "timings_ms": pulse.timings.model_dump(),
+        "errors": pulse.errors,
+        "notes": [
+            "Pipeline executado de ponta a ponta com persistência no SQLite local.",
+            (
+                "Dados de DEMONSTRAÇÃO fictícios — não são evidência de produção."
+                if pulse.data_source == "demo"
+                else "Coleta da API do GitHub (primeira página, até 100 itens por tipo)."
+            ),
+        ],
+    }
     return payload
 
 

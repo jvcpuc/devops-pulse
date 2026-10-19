@@ -25,7 +25,7 @@
 **Aponte:** “O LLM **não** inventa número — só interpreta indicadores já calculados.”
 
 ### 1:20–2:20 — Ambiente validado (ID 2.1 / evidências)
-**Diga:** “Ambiente local comprovado: Ollama llama3.2:1b, Kokoro, n8n e Evolution API no Docker. Testes 34 de 34 — incluindo o suíte do servidor MCP. Demo mode desligado — dados reais do repositório n8n-io/n8n.”
+**Diga:** “Ambiente local comprovado: Ollama llama3.2:1b, Kokoro, n8n e Evolution API no Docker. Testes 42 de 42 — incluindo o suíte do servidor MCP. Demo mode desligado — dados reais do repositório n8n-io/n8n.”
 **Mostre:** `/health`, Docker Desktop, pytest.
 
 ### 2:20–3:40 — Protótipo e resultado medido (ID 2.2 / métricas)
@@ -41,9 +41,9 @@
 ### 4:30–5:30 — Novidade: MCP (Model Context Protocol)
 **Diga:** “O MCP padroniza a comunicação entre aplicações de IA e ferramentas externas. Aqui o servidor MCP expõe as consultas que já existiam — reaproveitando a mesma função que calcula as métricas, sem duplicar regra de negócio.”
 **Mostre:** a seção **“Demonstração MCP”** no dashboard.
-**Faça:** clique em **Consultar métricas** → mostrar estado “processando” → “concluído” → JSON com o badge de fonte. Depois **Consultar commits**. Troque o owner para `..` para mostrar o **erro compreensível**.
+**Faça:** clique em **Consultar métricas** → mostrar estado “processando” → “concluído” → JSON com o badge de fonte. Depois **Consultar commits**. Troque o owner para `..` para mostrar o **erro compreensível**. Se quiser ir além: **Teste de estresse** (carga real com latência p95 ecoada) e, com o WhatsApp pareado, **Executar demonstração completa (com WhatsApp)** → boletim entregue no grupo com o áudio anexado.
 **Diga:** “Os botões falam o protocolo de verdade — JSON-RPC para `/mcp`. Mas a prova do protocolo é um **cliente MCP real**.”
-**Mostre:** o cliente configurado listando as 5 ferramentas e executando uma consulta; se houver IA, pergunte: “Com base nos dados, quais pontos merecem atenção?”
+**Mostre:** o cliente configurado listando as 7 ferramentas (5 somente-leitura + estresse e boletim completo) e executando uma consulta; se houver IA, pergunte: “Com base nos dados, quais pontos merecem atenção?”
 **Aponte:** “Repare que o resultado traz `data_source`: quando é demo, o sistema avisa — não apresentamos dado fictício como real.”
 
 ### 5:30–6:20 — Melhorias (análise crítica)
