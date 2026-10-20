@@ -20,6 +20,8 @@ node_modules/
 data/results/*
 !data/results/.gitkeep
 data/*.db
+# QR de pareamento do WhatsApp (artefato temporário da Evolution API)
+data/whatsapp-qr.png
 evidence/*.png
 evidence/*.jpg
 evidence/pdf-preview/

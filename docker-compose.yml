@@ -7,10 +7,15 @@ services:
       - .env
     environment:
       APP_HOST: 0.0.0.0
-      # No Docker, Ollama/Kokoro/n8n no host usam host.docker.internal (Windows/macOS)
-      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
-      KOKORO_BASE_URL: ${KOKORO_BASE_URL:-http://host.docker.internal:8880}
-      N8N_BASE_URL: ${N8N_BASE_URL:-http://host.docker.internal:5678}
+      # O .env é orientado ao host (localhost). Dentro do container localhost é o
+      # próprio container, então estas URLs usam host.docker.internal e as chaves
+      # *_DOCKER evitam que os valores do .env vazem para o container.
+      # Serviços no host ou em outros containers publicam a porta no host,
+      # então host.docker.internal funciona nos dois casos (Windows/macOS).
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL_DOCKER:-http://host.docker.internal:11434}
+      KOKORO_BASE_URL: ${KOKORO_BASE_URL_DOCKER:-http://host.docker.internal:8880}
+      N8N_BASE_URL: ${N8N_BASE_URL_DOCKER:-http://host.docker.internal:5678}
+      WHATSAPP_API_URL: ${WHATSAPP_API_URL_DOCKER:-http://host.docker.internal:18080}
     volumes:
       - ./data:/app/data
       - ./logs:/app/logs
